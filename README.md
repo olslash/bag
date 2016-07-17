@@ -1,36 +1,14 @@
 # buyme-aggregation-backend
 
-FIXME: description
+# Dev
 
-## Installation
-
-Download from http://example.com/FIXME.
-
-## Usage
-
-FIXME: explanation
-
-    $ java -jar buyme-aggregation-backend-0.1.0-standalone.jar [args]
-
-## Options
-
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
+* docker run --name bag-postgres -e POSTGRES_PASSWORD=pw -d -p 5432:5432 postgres
+* lein migratus migrate
+* lein ring server
 
 ## License
 
-Copyright © 2016 FIXME
+Copyright © 2016 Mitch Robb
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
