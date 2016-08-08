@@ -4,8 +4,8 @@
 
 * docker run --name bag-postgres -e POSTGRES_PASSWORD=pw -d -p 5432:5432 postgres
 * lein migratus migrate
-* lein ring server
-
+* lein repl
+* `user=> (reset)`
 ## License
 
 Copyright © 2016 Mitch Robb

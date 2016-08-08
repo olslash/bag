@@ -31,60 +31,27 @@
 ;;          DELETE /:id   -- remove an image
 ;;
 
+;; on startup pull sources from db and load into memory as config
+;; each source needs to have start, stop, fetch, ... methods -- protocol or mount/component
+;; how is config passed to the source?
+;;   global atom? needs to be updated as sources are added/modified
+;;   lookup in DB
 
 (ns buyme-aggregation-backend.core
-  (:require [liberator.core :refer [resource defresource]]
-            [liberator.dev :refer [wrap-trace]]
-            [ring.middleware.params :refer [wrap-params]]
-            [bidi.ring :refer [make-handler]]
-            [environ.core :refer [env]]
+  (:require [environ.core :refer [env]]
+            [taoensso.timbre :as timbre]
+            [mount.core :as mount]
+
+            [buyme-aggregation-backend.conf :refer [config]]
+            [buyme-aggregation-backend.routes :refer [webapp]]
             )
   (:gen-class))
 
 
-(def sources-collection-handler
-  (resource
-    :available-media-types ["text/plain"]
-    :handle-ok "this is the sources handler"))
-
-(def source-handler
-  (resource
-    :available-media-types ["text/plain"]
-    :handle-ok "this is the single source handler"))
-
-(def source-action-handler
-  (resource
-    :available-media-types ["text/plain"]
-    :handle-ok "this is the source action handler"))
+(timbre/set-config! (:timbre config))
 
 
-(def images-collection-handler
-  (resource
-    :available-media-types ["text/plain"]
-    :handle-ok "this is the images handler"))
-
-(def image-handler
-  (resource
-    :available-media-types ["text/plain"]
-    :handle-ok "this is the single image handler"))
 
 
-(def handler
-  (make-handler ["/" {"sources/" {"" sources-collection-handler
-                                  "start" source-action-handler
-                                  "stop" source-action-handler
-                                  "fetch" source-action-handler
-                                  [:id] source-handler}
-
-                      "images/" {"" images-collection-handler
-                                [:id] image-handler}}]))
-
-(def app
-  (-> handler
-      wrap-params
-      wrap-trace :header :ui))
-
-(defn -main
-  "I don't do a whole lot...yet."
-  [& args]
-  (println "Hello, World!"))
+(defn -main []
+  (mount/start))

@@ -4,16 +4,18 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
-  :plugins [[lein-ring "0.9.7"]
-            [lein-environ "1.0.3"]
+  :plugins [[lein-environ "1.0.3"]
             [migratus-lein "0.4.0"]]
 
   :dependencies [[org.clojure/clojure "1.8.0"]
+                 [org.clojure/tools.namespace "0.2.11"]
 
                  [environ "1.0.3"]
 
                  [liberator "0.14.1"]
                  [ring/ring-core "1.5.0"]
+                 [ring/ring-devel "1.5.0"]
+                 [ring/ring-jetty-adapter "1.5.0"]
                  [bidi "2.0.8"]
                  [jarohen/chime "0.1.9"]
                  [clj-time "0.11.0"]
@@ -23,14 +25,18 @@
                  [migratus "0.8.27"]
 
                  ;; logging
-                 [com.taoensso/timbre "4.6.0"]
-                 [com.fzakaria/slf4j-timbre "0.3.2"]          ;; req'd by migratus
+                 [com.taoensso/timbre "4.7.0"]
+                 [com.fzakaria/slf4j-timbre "0.3.2"] ;; req'd by migratus
 
 
+                 [mount "0.1.10"]
+                 [prismatic/schema "1.1.2"]
 
-                 ;; schema
-                 ;; mount
+
+                 [compojure "1.0.2"] ;; req'd by liberator.dev
                  ]
+
+  ;:dev-dependencies [[clojure.tools.namespace "0.2.11"]]
 
   :migratus {:store :database
              :migration-dir "migrations"
@@ -38,10 +44,16 @@
                   :subprotocol "postgresql"
                   :subname "//localhost:5432/wp_dev"
                   :user "postgres"
-                  :password "pw"}}
+                  :password (or
+                              (get (System/getenv) "DATABASE_PASSWORD")
+                              (let [{{:keys [env]} :dev} (-> "profiles.clj" slurp read-string)]
+                                (:database-password env))
+                              )
+                  }}
 
 
   :main ^:skip-aot buyme-aggregation-backend.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}}
-  :ring {:handler buyme-aggregation-backend.core/app})
+  :repl-options {:init-ns user}
+  )
