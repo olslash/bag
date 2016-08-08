@@ -44,14 +44,14 @@
 
             [buyme-aggregation-backend.conf :refer [config]]
             [buyme-aggregation-backend.routes :refer [webapp]]
+            [buyme-aggregation-backend.db]
             )
   (:gen-class))
 
 
-(timbre/set-config! (:timbre config))
-
-
-
+(defn do-config []
+  (timbre/set-config! {:level (keyword (config :log-level))}))
 
 (defn -main []
-  (mount/start))
+  (mount/start)
+  (do-config))

@@ -1,7 +1,9 @@
 {:dev  {:env {:environment "development"
+              :database-name "postgres"
               :database-password "pw"
               :database-port 5432
-              :timbre {:level :info }
+              :database-user "postgres"
+              :log-level "info"
               }}
  :prod {:env {:environment "production"
               :database-port 5432}}}

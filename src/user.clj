@@ -4,8 +4,9 @@
 
             [buyme-aggregation-backend.core :as app]))
 
+
 (defn start []
-  (mount/start))
+  (app/-main))
 
 (defn stop []
   (mount/stop))
@@ -29,3 +30,5 @@
   []
   (stop)
   (tn/refresh :after 'user/go))
+
+(tn/set-refresh-dirs "./src/buyme_aggregation_backend")
