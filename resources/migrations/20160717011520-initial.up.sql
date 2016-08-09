@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS sources (
-  source_id integer PRIMARY KEY,
+  source_id SERIAL PRIMARY KEY,
   name varchar(80),
   type varchar(80), -- rss, rest, etc
   url_root text

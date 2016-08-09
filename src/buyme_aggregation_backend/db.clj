@@ -19,5 +19,3 @@
 (defstate ^:dynamic *db*
           :start (conman/connect! (pool-spec config))
           :stop (conman/disconnect! *db*))
-
-(conman/bind-connection *db* "sql/queries.sql")

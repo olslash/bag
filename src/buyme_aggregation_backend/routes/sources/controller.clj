@@ -1,5 +1,10 @@
 (ns buyme-aggregation-backend.routes.sources.controller
-  (:require [liberator.core :refer [resource]]))
+  (:require [liberator.core :refer [resource]]
+            [conman.core :as conman]
+            [buyme-aggregation-backend.db :refer [*db*]]
+            ))
+
+(conman/bind-connection *db* "sql/sources.sql")
 
 (def sources-collection-handler
   (resource
