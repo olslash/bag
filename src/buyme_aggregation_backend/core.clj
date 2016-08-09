@@ -49,9 +49,10 @@
   (:gen-class))
 
 
-(defn do-config []
+(defn do-config [config]
   (timbre/set-config! {:level (keyword (config :log-level))}))
 
 (defn -main []
-  (mount/start)
-  (do-config))
+  (dosync
+    (mount/start)
+    (do-config config)))

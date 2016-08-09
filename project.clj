@@ -42,7 +42,7 @@
              :migration-dir "migrations"
              :db {:classname "org.postgresql.Driver"
                   :subprotocol "postgresql"
-                  :subname "//localhost:5432/wp_dev"
+                  :subname "//localhost:5432/postgres"
                   :user "postgres"
                   :password (or
                               (get (System/getenv) "DATABASE_PASSWORD")
