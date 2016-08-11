@@ -45,6 +45,7 @@
             [buyme-aggregation-backend.conf :refer [config]]
             [buyme-aggregation-backend.routes :refer [webapp]]
             [buyme-aggregation-backend.db]
+            [buyme-aggregation-backend.sources]
             )
   (:gen-class))
 
