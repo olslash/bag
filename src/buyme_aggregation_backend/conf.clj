@@ -4,6 +4,7 @@
             [environ.core :refer [env]]
             ))
 
-(defstate config
-          :start env
-          :stop {})
+(def config env)
+;(defstate config
+;          :start env
+;          :stop {})

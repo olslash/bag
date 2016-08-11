@@ -54,5 +54,6 @@
 
 (defn -main []
   (dosync
+    (do-config config)
     (mount/start)
-    (do-config config)))
+    ))
