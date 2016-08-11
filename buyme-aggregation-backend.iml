@@ -14,6 +14,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Leiningen: bidi:2.0.8" level="project" />
+    <orderEntry type="library" name="Leiningen: clj-stacktrace:0.2.8" level="project" />
     <orderEntry type="library" name="Leiningen: clj-time:0.11.0" level="project" />
     <orderEntry type="library" name="Leiningen: clojure-complete:0.2.4" level="project" />
     <orderEntry type="library" name="Leiningen: clout:1.0.1" level="project" />
@@ -44,6 +45,7 @@
     <orderEntry type="library" name="Leiningen: liberator:0.14.1" level="project" />
     <orderEntry type="library" name="Leiningen: migratus:0.8.27" level="project" />
     <orderEntry type="library" name="Leiningen: mount:0.1.10" level="project" />
+    <orderEntry type="library" name="Leiningen: ns-tracker:0.3.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/clojure:1.8.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/core.async:0.2.374" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/core.cache:0.6.4" level="project" />
@@ -58,6 +60,7 @@
     <orderEntry type="library" name="Leiningen: org.clojure/tools.analyzer:0.6.7" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/tools.logging:0.3.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/tools.macro:0.1.0" level="project" />
+    <orderEntry type="library" name="Leiningen: org.clojure/tools.namespace:0.2.11" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/tools.nrepl:0.2.12" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/tools.reader:0.9.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.eclipse.jetty/jetty-http:9.2.10.v20150310" level="project" />
@@ -71,6 +74,7 @@
     <orderEntry type="library" name="Leiningen: prismatic/schema:1.1.2" level="project" />
     <orderEntry type="library" name="Leiningen: ring/ring-codec:1.0.1" level="project" />
     <orderEntry type="library" name="Leiningen: ring/ring-core:1.5.0" level="project" />
+    <orderEntry type="library" name="Leiningen: ring/ring-devel:1.5.0" level="project" />
     <orderEntry type="library" name="Leiningen: ring/ring-jetty-adapter:1.5.0" level="project" />
     <orderEntry type="library" name="Leiningen: ring/ring-servlet:1.5.0" level="project" />
   </component>
