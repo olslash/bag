@@ -34,7 +34,7 @@
                                                  :stop :shutdown
                                                  :running))
                          fetch-timer-ch (do
-                                          (println "got a chime")
+                                          (info "got a chime")
                                           :running)))]
         (recur new-state)))
     command-ch))
@@ -43,6 +43,7 @@
   (println "stopping"))
 
 (defstate sources
-          :start (->> (get-source-settings) (map start-source))
+          :start (->> (get-source-settings)
+                         (map #(vector (:source_id %) (start-source %)))
+                         (into {}))
           :stop (stop-all-sources))
-
