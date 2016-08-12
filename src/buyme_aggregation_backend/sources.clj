@@ -25,11 +25,11 @@
               :stopped (let [command (<! command-ch)]
                          (condp = command
                            :start :running
-                           :default :stopped))
+                           :stopped))
               :running (alt!
                          command-ch ([command] (condp = command
                                                  :stop :shutdown
-                                                 :default :running))
+                                                 :running))
                          fetch-timer-ch (do
                                           (println "got a chime")
                                           :running)))]
