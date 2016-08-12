@@ -1,6 +1,6 @@
 (ns buyme-aggregation-backend.sources
   (:require [buyme-aggregation-backend.db :as db]
-            [clojure.core.async :refer [chan go-loop <! alt!]]
+            [clojure.core.async :refer [chan go-loop <! alt! sliding-buffer]]
             [chime :refer [chime-ch]]
             [clj-time.core :as t]
             [clj-time.periodic :refer [periodic-seq]]
@@ -12,9 +12,12 @@
 (defn get-source-settings []
   (db/get-all-sources))
 
-(defn start-source []
+
+(defn start-source [source]
+  (info "starting source" source)
   (let [command-ch (chan)
-        fetch-timer-ch (chime-ch (rest (periodic-seq (t/now) (-> 5 t/seconds))))]
+        fetch-timer-ch (chime-ch (rest (periodic-seq (t/now) (-> 5 t/seconds)))
+                                 {:ch (chan (sliding-buffer 1))})]
     (go-loop
       [state :stopped]
       (let [new-state
