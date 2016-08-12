@@ -51,7 +51,7 @@
 
 
 (defn do-config [config]
-  (timbre/set-config! {:level (keyword (config :log-level))}))
+  (timbre/set-level! (keyword (config :log-level))))
 
 (defn -main []
   (dosync
