@@ -2,8 +2,8 @@
   (:require [liberator.core :refer [resource]]
             [conman.core :as conman]
             [buyme-aggregation-backend.db :as db]
-            [buyme-aggregation-backend.helpers.liberator :refer [check-content-type parse-json]]
-            ))
+            [buyme-aggregation-backend.helpers.liberator :refer [check-content-type parse-json]]))
+
 
 (def sources-collection-handler
   (resource

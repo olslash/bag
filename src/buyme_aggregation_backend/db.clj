@@ -13,8 +13,8 @@
    :jdbc-url    "jdbc:postgresql://localhost:5432/"
    :username    (config :database-user)
    :password    (config :database-password)
-   :port-number (Integer. (config :database-port))
-   })
+   :port-number (Integer. (config :database-port))})
+
 
 (defstate ^:dynamic *db*
           :start (conman/connect! (pool-spec config))

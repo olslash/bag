@@ -45,8 +45,8 @@
             [buyme-aggregation-backend.conf :refer [config]]
             [buyme-aggregation-backend.routes :refer [webapp]]
             [buyme-aggregation-backend.db]
-            [buyme-aggregation-backend.sources]
-            )
+            [buyme-aggregation-backend.source])
+
   (:gen-class))
 
 
@@ -56,5 +56,5 @@
 (defn -main []
   (dosync
     (do-config config)
-    (mount/start)
-    ))
+    (mount/start)))
+
