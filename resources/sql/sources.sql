@@ -3,13 +3,18 @@
 SELECT * FROM sources
 
 -- :name insert-source! :! :n
--- :doc retrieve all sources.
-INSERT INTO sources (name, type, url_root)
-VALUES (:name, :type, :url_root)
+-- :doc insert a new source.
+INSERT INTO sources (source_impl_id, name, url_root)
+VALUES (:source_impl_id, :name, :url_root)
+
+-- :name remove-source! :! :n
+-- :doc remove a source by id
+DELETE FROM sources
+WHERE id = :id
 
 -- :name upsert-setting! :! :n
 -- :doc insert/update a source setting
-INSERT INTO source_settings (source_id, key, value)
+INSERT INTO source_settings (id, key, value)
 VALUES (:source_id, :key, :value)
-ON CONFLICT (source_id, key)
+ON CONFLICT (id, key)
 DO UPDATE SET value = EXCLUDED.value

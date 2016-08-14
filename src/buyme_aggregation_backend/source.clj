@@ -43,8 +43,8 @@
 
 (defstate sources
           :start (->> (db/get-all-sources)
-                      ; fixme -- more descriptive IDs and don't use name
-                      (map #(vector (:name %)
-                                    (start-source ((get source-impls (:name %)) %))))
+                      (map #(let [impl (get source-impls (keyword (:source_impl_id %)))]
+                             (when impl
+                               (vector (:id %) (start-source impl)))))
                       (into {}))
           :stop (stop-all-sources))

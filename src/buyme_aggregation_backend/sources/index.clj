@@ -2,4 +2,4 @@
   (:require [buyme-aggregation-backend.sources.imgur :as imgur]))
 
 
-(def source-impls {"Imgur" imgur/make-source})
+(def source-impls {:imgur imgur/make-source})
