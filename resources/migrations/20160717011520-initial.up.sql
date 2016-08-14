@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS sources (
 CREATE TABLE IF NOT EXISTS source_settings (
   source_id integer REFERENCES sources ON DELETE CASCADE,
   key varchar(80),
-  value text
+  value text,
+  CONSTRAINT u_constraint UNIQUE (source_id, key)
 );
 
 --;;
