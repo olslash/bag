@@ -14,6 +14,7 @@
                  [environ "1.0.3"]
 
                  [clj-http "2.2.0"]
+                 [com.cemerick/url "0.1.1"]
                  [liberator "0.14.1"]
                  [ring/ring-core "1.5.0"]
                  [ring/ring-devel "1.5.0"]
@@ -25,6 +26,7 @@
                  [org.postgresql/postgresql "9.4.1209"]
                  [conman "0.5.8"]
                  [migratus "0.8.27"]
+                 [robert/hooke "1.3.0"]
 
                  ;; logging
                  [com.taoensso/timbre "4.7.0"]

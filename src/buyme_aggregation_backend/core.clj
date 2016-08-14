@@ -39,9 +39,9 @@
 
 (ns buyme-aggregation-backend.core
   (:require [environ.core :refer [env]]
-            [taoensso.timbre :as timbre]
             [mount.core :as mount]
 
+            [buyme-aggregation-backend.utils.logging :refer [do-logging-config]]
             [buyme-aggregation-backend.conf :refer [config]]
             [buyme-aggregation-backend.routes :refer [webapp]]
             [buyme-aggregation-backend.db]
@@ -50,11 +50,9 @@
   (:gen-class))
 
 
-(defn do-config [config]
-  (timbre/set-level! (keyword (config :log-level))))
 
 (defn -main []
   (dosync
-    (do-config config)
+    (do-logging-config config)
     (mount/start)))
 

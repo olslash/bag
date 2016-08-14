@@ -47,17 +47,25 @@
   (put! ch :stop)
   (close! ch))
 
-
 (defn stop-all-sources [sources]
   (fmap stop-source sources))
 
 
+(defn source-impl-id [settings]
+  (keyword (:source_impl_id settings)))
+
 (defstate sources
           :start (->> (db/get-all-sources)
-                      (map #(let [impl (get source-impls (keyword (:source_impl_id %)))]
-                             (when impl
-                               (vector (:id %) (init-source (impl %))))))
+                      (map (fn [source-settings]
+                             (let [impl (get source-impls (source-impl-id source-settings))]
+                               (when impl
+                                 (vector (:id source-settings) (init-source (impl source-settings)))))))
+
                       (into {})
                       (fmap start-source))
-          :stop (do (stop-all-sources sources)
-                    {}))
+          :stop (do
+                  (stop-all-sources sources)
+                  {}))
+
+
+

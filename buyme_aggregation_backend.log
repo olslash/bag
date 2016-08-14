@@ -1,0 +1,6 @@
+16-08-14 10:44:37 Cool-Mitch.local INFO [com.zaxxer.hikari.HikariDataSource:70] - HikariPool-1 - Started.
+16-08-14 10:44:37 Cool-Mitch.local INFO [com.zaxxer.hikari.pool.PoolBase:444] - HikariPool-1 - Driver does not support get/set network timeout for connections. (Method org.postgresql.jdbc.PgConnection.getNetworkTimeout() is not yet implemented.)
+16-08-14 10:44:37 Cool-Mitch.local INFO [org.eclipse.jetty.server.Server:74] - jetty-9.2.10.v20150310
+16-08-14 10:44:37 Cool-Mitch.local INFO [org.eclipse.jetty.server.ServerConnector:74] - Started ServerConnector@360b0d2e{HTTP/1.1}{0.0.0.0:8080}
+16-08-14 10:44:37 Cool-Mitch.local INFO [org.eclipse.jetty.server.Server:74] - Started @14861ms
+16-08-14 10:44:42 Cool-Mitch.local INFO [buyme-aggregation-backend.utils.logging:17] - HTTP Fetch: http://www.google.com nil

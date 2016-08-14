@@ -6,4 +6,5 @@
               :log-level "info"}}
 
  :prod {:env {:environment "production"
-              :database-port "5432"}}}
+              :database-port "5432"
+              :log-level "debug"}}}

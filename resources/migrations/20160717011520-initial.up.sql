@@ -1,8 +1,7 @@
 CREATE TABLE IF NOT EXISTS sources (
   id SERIAL PRIMARY KEY,
   source_impl_id varchar(80),
-  name varchar(80),
-  url_root text
+  name varchar(80) UNIQUE
 );
 
 --;;
@@ -11,7 +10,7 @@ CREATE TABLE IF NOT EXISTS source_settings (
   source_id integer REFERENCES sources ON DELETE CASCADE,
   key varchar(80),
   value text,
-  CONSTRAINT u_constraint UNIQUE (source_id, key)
+  CONSTRAINT unique_keys_per_id UNIQUE (source_id, key)
 );
 
 --;;
