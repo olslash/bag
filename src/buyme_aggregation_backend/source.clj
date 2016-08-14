@@ -3,7 +3,8 @@
             [buyme-aggregation-backend.sources.index :refer [source-impls]]
             [buyme-aggregation-backend.types :refer [fetch parse]]
 
-            [clojure.core.async :refer [chan go-loop <! alt! sliding-buffer]]
+            [clojure.core.async :refer [chan go-loop <! alt! sliding-buffer put! close!]]
+            [clojure.algo.generic.functor :refer [fmap]]
             [chime :refer [chime-ch]]
             [clj-time.core :as t]
             [clj-time.periodic :refer [periodic-seq]]
@@ -11,7 +12,7 @@
             [taoensso.timbre :refer [info]]))
 
 
-(defn start-source [source]
+(defn init-source [source]
   (let [command-ch (chan)
         fetch-timer-ch (chime-ch (rest (periodic-seq (t/now) (-> 5 t/seconds)))
                                  {:ch (chan (sliding-buffer 1))})]
@@ -38,13 +39,25 @@
         (recur new-state)))
     command-ch))
 
-(defn stop-all-sources []
-  (println "stopping"))
+(defn start-source [ch]
+  (put! ch :start)
+  ch)
+
+(defn stop-source [ch]
+  (put! ch :stop)
+  (close! ch))
+
+
+(defn stop-all-sources [sources]
+  (fmap stop-source sources))
+
 
 (defstate sources
           :start (->> (db/get-all-sources)
                       (map #(let [impl (get source-impls (keyword (:source_impl_id %)))]
                              (when impl
-                               (vector (:id %) (start-source impl)))))
-                      (into {}))
-          :stop (stop-all-sources))
+                               (vector (:id %) (init-source (impl %))))))
+                      (into {})
+                      (fmap start-source))
+          :stop (do (stop-all-sources sources)
+                    {}))

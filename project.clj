@@ -9,6 +9,7 @@
 
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/tools.namespace "0.2.11"]
+                 [org.clojure/algo.generic "0.1.2"]
 
                  [environ "1.0.3"]
 
@@ -34,8 +35,8 @@
                  [prismatic/schema "1.1.2"]
 
 
-                 [compojure "1.0.2"] ;; req'd by liberator.dev
-                 ]
+                 [compojure "1.0.2"]] ;; req'd by liberator.dev
+
 
   ;:dev-dependencies [[clojure.tools.namespace "0.2.11"]]
 
@@ -48,13 +49,12 @@
                   :password (or
                               (get (System/getenv) "DATABASE_PASSWORD")
                               (let [{{:keys [env]} :dev} (-> "profiles.clj" slurp read-string)]
-                                (:database-password env))
-                              )
-                  }}
+                                (:database-password env)))}}
+
+
 
 
   :main ^:skip-aot buyme-aggregation-backend.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}}
-  :repl-options {:init-ns user}
-  )
+  :repl-options {:init-ns user})
