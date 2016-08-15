@@ -44,8 +44,7 @@
   ch)
 
 (defn stop-source [ch]
-  (put! ch :stop)
-  (close! ch))
+  (put! ch :stop (constantly #(close! ch))))
 
 (defn stop-all-sources [sources]
   (fmap stop-source sources))
