@@ -13,7 +13,7 @@
 
                  [environ "1.0.3"]
 
-                 [clj-http "2.2.0"]
+                 [http-kit "2.2.0"]
                  [cheshire "5.6.3"]
 
                  [com.cemerick/url "0.1.1"]

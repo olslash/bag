@@ -1,5 +1,5 @@
 (ns buyme-aggregation-backend.utils.logging
-  (:require [clj-http.client]
+  (:require [org.httpkit.client]
             [robert.hooke :refer [add-hook clear-hooks]]
             [taoensso.timbre :as timbre :refer [info]]
             [taoensso.timbre.appenders.3rd-party.rotor :as rotor]))
@@ -17,5 +17,5 @@
   (info "HTTP Fetch:" args)
   (apply f args))
 
-(clear-hooks #'clj-http.client/get)
-(add-hook #'clj-http.client/get #'log-http-get)
+(clear-hooks #'org.httpkit.client/get)
+(add-hook #'org.httpkit.client/get #'log-http-get)
