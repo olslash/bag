@@ -4,8 +4,8 @@ SELECT * FROM sources
 
 -- :name insert-source! :! :n
 -- :doc insert a new source.
-INSERT INTO sources (source_impl_id, name, url_root)
-VALUES (:source_impl_id, :name, :url_root)
+INSERT INTO sources (source_impl_id, name)
+VALUES (:source_impl_id, :name)
 
 -- :name remove-source! :! :n
 -- :doc remove a source by id

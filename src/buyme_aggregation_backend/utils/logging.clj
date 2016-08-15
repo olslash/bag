@@ -13,9 +13,9 @@
                                     :min-level  :debug})}}))
 
 
-(defn log-http-get [f url & args]
-  (info "HTTP Fetch:" url args)
-  (apply f url args))
+(defn log-http-get [f & args]
+  (info "HTTP Fetch:" args)
+  (apply f args))
 
 (clear-hooks #'clj-http.client/get)
 (add-hook #'clj-http.client/get #'log-http-get)

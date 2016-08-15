@@ -9,8 +9,8 @@
 
             [buyme-aggregation-backend.conf :refer [config]]
             [buyme-aggregation-backend.routes.sources.controller :as sources-controller]
-            [buyme-aggregation-backend.routes.images.controller :as images-controller]
-            ))
+            [buyme-aggregation-backend.routes.images.controller :as images-controller]))
+
 
 
 (def handler
