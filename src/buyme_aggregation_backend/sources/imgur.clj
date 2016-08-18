@@ -15,23 +15,26 @@
                         {"Authorization" (str "Client-ID " (config :imgur-client-id))
                          "Accept" "application/json"}})
 
+(defn parse-response-body [res]
+  (-> res
+      (get :body)
+      (json/parse-string true)
+      (get :data)))
 
 (defn fetch-tag-items [tag]
   (let [tag-gallery-url (str (url api-root tag-gallery-path tag))]
-    (-> (:body @(http/get tag-gallery-url imgur-http-config))
-        (json/parse-string true)
-        (get-in [:data :items]))))
+    (-> @(http/get tag-gallery-url imgur-http-config)
+        (parse-response-body)
+        (get :items))))
 
-
+; fetch--
 ; fetch-tag-items: [image1, album1, image2, image3, album 2]
 ; fetch each album, key by id
+;
+; parse--
 ; for each album item, merge the album's props onto it -- uploader id, nsfw, description ("alb desc / image desc")
 ; flatmap over tag items, if is_album, replace album with its associated images
 ; api-image->image
-
-;(defn fetch-album [id]
-;  (-> (:body @(http/get (str (url api-root album-path id))))
-;      (json/parse-string true)))
 
 (defn album-url [id]
   (str (url api-root album-path id)))
@@ -56,22 +59,18 @@
                      album-urls (->> tag-items
                                      (map #(when (:is_album %) (album-url (:id %))))
                                      (filter some?))
-                     fetch-album-promises (doall (map #(http/get % imgur-http-config) album-urls))
-                     #_albums-images-by-album-id #_(->> (doall (map deref fetch-album-promises))
-                                                    (key-by :id)
-                                                    (fmap attach-album-meta-to-images)
-                                                    (fmap :images))]
+                     fetch-album-promises (doall (map #(http/get % imgur-http-config) album-urls))]
                  {:tag-items tag-items
-                  :albums (->> (->> fetch-album-promises
-                                           (map (fn [promise]
-                                                  -> promise
-                                                     deref
-                                                     :body
-                                                     #(json/parse-string % true)
-                                                     #(get % :data))))
-                               (key-by :id))}
-                 #_(-> tag-items
-                     (mapcat #(if (:is_album % (get albums-images-by-album-id (:id %)) %)))
-                     (map api-image->image))))
+                  :albums (->> fetch-album-promises
+                               (map #(-> % (deref) (parse-response-body)))
+                               (key-by :id))}))
 
-    (parse [_ data] (print "parse imgur") (str (:test data) "parsed"))))
+    (parse [_ {:keys [tag-items albums]}]
+      (let [fat-album-images (->> albums
+                                  (fmap attach-album-meta-to-images)
+                                  (fmap :images))]
+        (-> tag-items
+            (mapcat #(if (:is_album %) (get fat-album-images (:id %)) %))
+            (map api-image->image))))))
+
+
