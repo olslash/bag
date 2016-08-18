@@ -43,8 +43,9 @@
   "merge album-level metadata into each image in that album"
   [album]
   ; todo -- merge-with and combine title/descriptions
-  (map #(merge (dissoc album :images) %)
-       (:images album)))
+  (assoc album :images (map #(merge (dissoc album :images) %)
+                             (:images album))))
+
 
 (defn api-image->image [api-image]
   (let [translate {:account_id :uploader-id}]
@@ -69,8 +70,9 @@
       (let [fat-album-images (->> albums
                                   (fmap attach-album-meta-to-images)
                                   (fmap :images))]
-        (-> tag-items
-            (mapcat #(if (:is_album %) (get fat-album-images (:id %)) %))
-            (map api-image->image))))))
+        (->> tag-items
+             (map #(if (:is_album %) (get fat-album-images (:id %)) %))
+             (flatten)
+             (map api-image->image))))))
 
 

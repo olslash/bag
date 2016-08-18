@@ -65,4 +65,12 @@
                        (str (url api-root album-path "album1")) fake-album-response]
                       (is (= {:tag-items (-> (get gallery-body "items") (json/generate-string) (json/parse-string true))
                               :albums    {"album1" (-> album-body (json/generate-string) (json/parse-string true))}}
-                             (fetch source)))))))
+                             (fetch source))))))
+
+  (testing "parsing returns the expected format"
+    (with-fake-http [(str (url api-root tag-gallery-path "wallpaper")) fake-gallery-response
+                     (str (url api-root album-path "album1")) fake-album-response]
+                    (let [source (make-source nil)
+                          fetch-result (fetch source)]
+                      (is (= (parse source fetch-result)
+                             []))))))
