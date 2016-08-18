@@ -41,7 +41,7 @@
   (:require [environ.core :refer [env]]
             [mount.core :as mount]
 
-            [buyme-aggregation-backend.utils.logging :refer [do-logging-config]]
+            [buyme-aggregation-backend.util.logging :refer [do-logging-config]]
             [buyme-aggregation-backend.conf :refer [config]]
             [buyme-aggregation-backend.routes :refer [webapp]]
             [buyme-aggregation-backend.db]

@@ -1,4 +1,4 @@
-(ns buyme-aggregation-backend.utils.logging
+(ns buyme-aggregation-backend.util.logging
   (:require [org.httpkit.client]
             [robert.hooke :refer [add-hook clear-hooks]]
             [taoensso.timbre :as timbre :refer [info]]

@@ -15,6 +15,7 @@
 
                  [http-kit "2.2.0"]
                  [cheshire "5.6.3"]
+                 [http-kit.fake "0.2.1"]
 
                  [com.cemerick/url "0.1.1"]
                  [liberator "0.14.1"]
