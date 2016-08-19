@@ -27,15 +27,6 @@
         (parse-response-body)
         (get :items))))
 
-; fetch--
-; fetch-tag-items: [image1, album1, image2, image3, album 2]
-; fetch each album, key by id
-;
-; parse--
-; for each album item, merge the album's props onto it -- uploader id, nsfw, description ("alb desc / image desc")
-; flatmap over tag items, if is_album, replace album with its associated images
-; api-image->image
-
 (defn album-url [id]
   (str (url api-root album-path id)))
 
@@ -46,12 +37,9 @@
   (assoc album :images (map #(merge (dissoc album :images) %)
                              (:images album))))
 
-
 (defn api-image->image [api-image]
   (let [translate {:account_id :uploader-id}]
      (map->image (rename-keys api-image translate))))
-
-
 
 
 (defn make-source [settings]
