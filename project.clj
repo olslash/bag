@@ -42,8 +42,15 @@
 
                  [compojure "1.0.2"]] ;; req'd by liberator.dev
 
+  ;; generate uberjars
+  ;; `lein with-profile lambda-fetch-store uberjar`
+  :profiles {:backend {:uberjar {:aot :all}
+                       :main ^:skip-aot buyme-aggregation-backend.core}
 
-  ;:dev-dependencies [[clojure.tools.namespace "0.2.11"]]
+             :lambda-fetch-store {:dependencies [[com.amazonaws/aws-lambda-java-core "1.0.0"]]
+                                  :uberjar-name "lambda-fetch-store.jar"
+                                  :main         lambda.fetch-store-image
+                                  :aot [lambda.fetch-store-image]}}
 
   :migratus {:store :database
              :migration-dir "migrations"
@@ -57,9 +64,5 @@
                                 (:database-password env)))}}
 
 
-
-
-  :main ^:skip-aot buyme-aggregation-backend.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}}
   :repl-options {:init-ns user})
