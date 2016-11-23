@@ -5,7 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :plugins [[lein-environ "1.0.3"]
-            [migratus-lein "0.4.0"]
+            [migratus-lein "0.4.3"]
             [lein-cljsbuild "1.1.4"]]
 
   :dependencies [[org.clojure/clojure "1.8.0"]
@@ -41,14 +41,21 @@
                  [prismatic/schema "1.1.2"]
 
 
-                 [compojure "1.0.2"]] ;; req'd by libe[lein-cljsbuild "1.1.4"]rator.dev
+                 [compojure "1.0.2"]] ;; req'd by liberator.dev
+
 
   ;; generate uberjars
   ;; `lein with-profile lambda-fetch-store uberjar`
-  ;:profiles {:backend {:main ^:skip-aot buyme-aggregation-backend.core}
+  ;:profiles {:uberjar {:aot :all}
+  ;           :backend {:main ^:skip-aot buyme-aggregation-backend.core}
   ;
   ;           :lambda-fetch-store {:dependencies [[com.amazonaws/aws-lambda-java-core "1.0.0"]]
-  ;                                :main         lambda.fetch-store-image}}
+  ;                                :main         lambda.fetch-store-image
+  ;                                :uberjar-exclusions ["#buyme_aggregation_backend/"]}}
+  ;
+  ;:cljsbuild {:builds {:hello
+  ;                     {:source-paths ["src-cljs/lambda"]
+  ;                      :compiler {:output-to "resources/lambda/hello.js"}}}}
 
 
   :migratus {:store :database
@@ -62,11 +69,9 @@
                               (let [{{:keys [env]} :dev} (-> "profiles.clj" slurp read-string)]
                                 (:database-password env)))}}
 
-  :cljsbuild {:builds {:hello
-                       {:source-paths ["src-cljs/lambda"]
-                        :compiler {:output-to "hello.js"}}}}
-
-  :source-paths ["src"]
-  :aot :all
+  :profiles {:uberjar {:aot :all}}
+  :main ^:skip-aot buyme-aggregation-backend.core
+  :clean-targets ^{:protect false} ["resources/lambda/"
+                                    :target-path]
   :target-path "target/%s"
   :repl-options {:init-ns user})

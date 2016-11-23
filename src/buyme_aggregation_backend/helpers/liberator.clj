@@ -1,7 +1,7 @@
 (ns buyme-aggregation-backend.helpers.liberator
   (:require [clojure.java.io :as io]
-            [clojure.data.json :as json]
-            ))
+            [clojure.data.json :as json]))
+
 
 ;; convert the body to a reader. Useful for testing in the repl
 ;; where setting the body to a string is much simpler.

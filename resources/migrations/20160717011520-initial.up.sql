@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS source_settings (
 CREATE TABLE IF NOT EXISTS images (
   image_id integer PRIMARY KEY,
   source_id integer REFERENCES sources,
+  filename varchar(200),
+  s3_url varchar(1000),
   slug varchar(200),
   description text,
   attribution_url text,

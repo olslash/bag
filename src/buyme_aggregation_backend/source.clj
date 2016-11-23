@@ -3,7 +3,7 @@
             [buyme-aggregation-backend.sources.index :refer [source-impls]]
             [buyme-aggregation-backend.types :refer [fetch parse]]
 
-            [clojure.core.async :refer [chan go-loop <! alt! sliding-buffer put! close!]]
+            [clojure.core.async :refer [chan go-loop <! alt! sliding-buffer put! close! thread]]
             [clojure.algo.generic.functor :refer [fmap]]
             [chime :refer [chime-ch]]
             [clj-time.core :as t]
@@ -14,28 +14,41 @@
 
 (defn init-source [source]
   (let [command-ch (chan)
-        fetch-timer-ch (chime-ch (rest (periodic-seq (t/now) (-> 5 t/seconds)))
+        fetch-timer-ch (chime-ch (rest (periodic-seq (t/now) (-> 5 t/minutes)))
                                  {:ch (chan (sliding-buffer 1))})]
     (go-loop
-      [state :stopped]
+      [[state data] [:stopped]]
       (let [new-state
             (case state
               :shutdown (do
                           (print "shutting down...")
-                          :stopped)
+                          [:stopped])
+
               :stopped (let [command (<! command-ch)]
+                         (print "stopped")
                          (condp = command
-                           :start :running
-                           :stopped))
-              :running (alt!
+                           :start [:idle]
+                           :fetch [:fetching :once]
+                           [:stopped]))
+
+              :idle (alt!
                          command-ch ([command] (condp = command
-                                                 :stop :shutdown
-                                                 :running))
-                         fetch-timer-ch (do
-                                          (info "got a chime")
-                                          (let [data (fetch source)]
-                                            (parse source data))
-                                          :running)))]
+                                                 :stop [:shutdown]
+                                                 :fetch [:fetching]
+                                                 [:idle]))
+                         fetch-timer-ch [:fetching])
+
+              :fetching (do
+                          (info "Fetching: " source)
+                          (let [work-ch (thread (->> source
+                                                     (fetch)
+                                                     (parse source)
+                                                     #_(store)))]
+                            (let [result (<! work-ch)]
+                              (println "done! " (count result) " images processed")))
+                          (if (= data :once) [:stopped]
+                                             [:idle])))]
+
         (recur new-state)))
     command-ch))
 
@@ -61,7 +74,7 @@
                                  (vector (:id source-settings) (init-source (impl source-settings)))))))
 
                       (into {})
-                      (fmap start-source))
+                      #_(fmap start-source))
           :stop (do
                   (stop-all-sources sources)
                   {}))
