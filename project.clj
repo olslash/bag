@@ -45,14 +45,14 @@
 
 
   ;; generate uberjars
-  ;; `lein clean; lein with-profile uberjar,lambda uberjar`
-  ;; `lein clean; lein with-profile uberjar,core uberjar`
+  ;; `lein clean; lein with-profile lambda uberjar`
+  ;; `lein clean; lein with-profile core uberjar`
   :profiles {:uberjar {}
 
              :lambda {:dependencies [[com.amazonaws/aws-lambda-java-core "1.0.0"]]
                       :uberjar-name "lambda.jar"
                       :main lambda.core
-                      :aot [lambda.fetch-store-image]}
+                      :aot [lambda.core]}
 
 
              :core {:main ^:skip-aot buyme-aggregation-backend.core
