@@ -5,7 +5,8 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :plugins [[lein-environ "1.0.3"]
-            [migratus-lein "0.4.0"]]
+            [migratus-lein "0.4.0"]
+            [lein-cljsbuild "1.1.4"]]
 
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/tools.namespace "0.2.11"]
@@ -40,17 +41,15 @@
                  [prismatic/schema "1.1.2"]
 
 
-                 [compojure "1.0.2"]] ;; req'd by liberator.dev
+                 [compojure "1.0.2"]] ;; req'd by libe[lein-cljsbuild "1.1.4"]rator.dev
 
   ;; generate uberjars
   ;; `lein with-profile lambda-fetch-store uberjar`
-  :profiles {:backend {:uberjar {:aot :all}
-                       :main ^:skip-aot buyme-aggregation-backend.core}
+  ;:profiles {:backend {:main ^:skip-aot buyme-aggregation-backend.core}
+  ;
+  ;           :lambda-fetch-store {:dependencies [[com.amazonaws/aws-lambda-java-core "1.0.0"]]
+  ;                                :main         lambda.fetch-store-image}}
 
-             :lambda-fetch-store {:dependencies [[com.amazonaws/aws-lambda-java-core "1.0.0"]]
-                                  :uberjar-name "lambda-fetch-store.jar"
-                                  :main         lambda.fetch-store-image
-                                  :aot [lambda.fetch-store-image]}}
 
   :migratus {:store :database
              :migration-dir "migrations"
@@ -63,6 +62,11 @@
                               (let [{{:keys [env]} :dev} (-> "profiles.clj" slurp read-string)]
                                 (:database-password env)))}}
 
+  :cljsbuild {:builds {:hello
+                       {:source-paths ["src-cljs/lambda"]
+                        :compiler {:output-to "hello.js"}}}}
 
+  :source-paths ["src"]
+  :aot :all
   :target-path "target/%s"
   :repl-options {:init-ns user})
