@@ -45,17 +45,15 @@
 
 
   ;; generate uberjars
-  ;; `lein with-profile lambda-fetch-store uberjar`
-  ;:profiles {:uberjar {:aot :all}
-  ;           :backend {:main ^:skip-aot buyme-aggregation-backend.core}
-  ;
-  ;           :lambda-fetch-store {:dependencies [[com.amazonaws/aws-lambda-java-core "1.0.0"]]
-  ;                                :main         lambda.fetch-store-image
-  ;                                :uberjar-exclusions ["#buyme_aggregation_backend/"]}}
-  ;
-  ;:cljsbuild {:builds {:hello
-  ;                     {:source-paths ["src-cljs/lambda"]
-  ;                      :compiler {:output-to "resources/lambda/hello.js"}}}}
+  ;; `lein clean; lein with-profile uberjar,lambda uberjar`
+  ;; `lein clean; lein with-profile uberjar,core uberjar`
+  :profiles {:uberjar {:aot :all}
+
+             :lambda {:dependencies [[com.amazonaws/aws-lambda-java-core "1.0.0"]]
+                      :uberjar-name "lambda.jar"}
+             :core {:main ^:skip-aot buyme-aggregation-backend.core
+                    :uberjar-name "main.jar"}}
+
 
 
   :migratus {:store :database
@@ -69,8 +67,7 @@
                               (let [{{:keys [env]} :dev} (-> "profiles.clj" slurp read-string)]
                                 (:database-password env)))}}
 
-  :profiles {:uberjar {:aot :all}}
-  :main ^:skip-aot buyme-aggregation-backend.core
+
   :clean-targets ^{:protect false} ["resources/lambda/"
                                     :target-path]
   :target-path "target/%s"
