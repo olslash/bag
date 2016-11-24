@@ -34,14 +34,17 @@
 
                  ;; logging
                  [com.taoensso/timbre "4.7.0"]
-                 [com.fzakaria/slf4j-timbre "0.3.2"] ;; req'd by migratus
+                 [com.fzakaria/slf4j-timbre "0.3.2"]        ;; req'd by migratus
 
 
                  [mount "0.1.10"]
                  [prismatic/schema "1.1.2"]
 
 
-                 [compojure "1.0.2"]] ;; req'd by liberator.dev
+                 [compojure "1.0.2"]                   ;; req'd by liberator.dev
+
+                 ;; lambda
+                 [uswitch/lambada "0.1.2"]]
 
 
   ;; generate uberjars
@@ -49,7 +52,7 @@
   ;; `lein clean; lein with-profile core uberjar`
   :profiles {:uberjar {}
 
-             :lambda {:dependencies [[com.amazonaws/aws-lambda-java-core "1.0.0"]]
+             :lambda {:dependencies []
                       :uberjar-name "lambda.jar"
                       :main lambda.core
                       :aot [lambda.core]}

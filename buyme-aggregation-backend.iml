@@ -22,6 +22,7 @@
     <orderEntry type="library" name="Leiningen: clj-time:0.11.0" level="project" />
     <orderEntry type="library" name="Leiningen: clojure-complete:0.2.4" level="project" />
     <orderEntry type="library" name="Leiningen: clout:1.0.1" level="project" />
+    <orderEntry type="library" name="Leiningen: com.amazonaws/aws-lambda-java-core:1.1.0" level="project" />
     <orderEntry type="library" name="Leiningen: com.carouselapps/to-jdbc-uri:0.5.0" level="project" />
     <orderEntry type="library" name="Leiningen: com.cemerick/clojurescript.test:0.0.4" level="project" />
     <orderEntry type="library" name="Leiningen: com.cemerick/url:0.1.1" level="project" />
@@ -135,6 +136,7 @@
     <orderEntry type="library" name="Leiningen: ring/ring-servlet:1.5.0" level="project" />
     <orderEntry type="library" name="Leiningen: robert/hooke:1.3.0" level="project" />
     <orderEntry type="library" name="Leiningen: tigris:0.1.1" level="project" />
+    <orderEntry type="library" name="Leiningen: uswitch/lambada:0.1.2" level="project" />
     <orderEntry type="library" name="Leiningen: venantius/glow:0.1.3" level="project" />
     <orderEntry type="library" name="Leiningen: venantius/ultra:0.4.1" level="project" />
   </component>

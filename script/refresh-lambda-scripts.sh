@@ -26,6 +26,8 @@ create_lambda_function() {
         --zip-file fileb://$jar_path
 }
 
+echo
+
 for i in `seq 0 2 $((${#handlers[@]} - 1))`; do
     name=${handlers[$i]}
     handler=${handlers[$i + 1]}
