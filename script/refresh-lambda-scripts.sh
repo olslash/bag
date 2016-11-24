@@ -1,6 +1,9 @@
 #!/bin/bash
 
-source "lambda_management_config.conf"
+parent_path=$( cd "$(dirname "${BASH_SOURCE}")" ; pwd -P )
+cd "$parent_path"
+
+source "./lambda_management_config.conf"
 
 read -p "Delete and replace all lambda handlers with ${jar_path}? [yN] " -n 1 -r
 if [[ ! $REPLY =~ ^[Yy]$ ]]
