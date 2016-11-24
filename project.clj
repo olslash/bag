@@ -44,8 +44,11 @@
                  [compojure "1.0.2"]                   ;; req'd by liberator.dev
 
                  ;; lambda
-                 [uswitch/lambada "0.1.2"]]
-
+                 [uswitch/lambada "0.1.2"]
+                 [amazonica "0.3.77" :exclusions [com.amazonaws/aws-java-sdk
+                                                  com.amazonaws/amazon-kinesis-client]]
+                 [com.amazonaws/aws-java-sdk-core "1.11.57"]
+                 [com.amazonaws/aws-java-sdk-lambda "1.11.57"]]
 
   ;; generate uberjars
   ;; `lein clean; lein with-profile lambda uberjar`

@@ -45,7 +45,7 @@
                                                      (parse source)
                                                      #_(store)))]
                             (let [result (<! work-ch)]
-                              (println "done! " (count result) " images processed")))
+                              (println "done! " (count result) " images processed:" result)))
                           (if (= data :once) [:stopped]
                                              [:idle])))]
 
@@ -74,7 +74,7 @@
                                  (vector (:id source-settings) (init-source (impl source-settings)))))))
 
                       (into {})
-                      #_(fmap start-source))
+                      (fmap start-source))
           :stop (do
                   (stop-all-sources sources)
                   {}))

@@ -2,6 +2,7 @@
   (:require [buyme-aggregation-backend.types :refer [source map->image]]
             [buyme-aggregation-backend.conf :refer [config]]
             [buyme-aggregation-backend.util.misc :refer [key-by with-thread-pool]]
+            [buyme-aggregation-backend.helpers.lambda :refer [invoke-lambda-fn]]
             [clojure.core.async :as a]
             [clojure.algo.generic.functor :refer [fmap]]
             [clojure.set :refer [rename-keys]]
@@ -9,12 +10,13 @@
             [cheshire.core :as json]
             [cemerick.url :refer [url]]))
 
-;(def api-root "https://api.imgur.com/3")
-;(def tag-gallery-path "gallery/t")
-;(def album-path "album")
-;(def imgur-http-config {:headers
-;                        {"Authorization" (str "Client-ID " (config :imgur-client-id))
-;                         "Accept" "application/json"}})
+
+(def api-root "https://api.imgur.com/3")
+(def tag-gallery-path "gallery/t")
+(def album-path "album")
+(def imgur-http-config {:headers
+                        {:Authorization (str "Client-ID " (config :imgur-client-id))
+                         :Accept        "application/json"}})
 ;
 ;(defn parse-response-body [res]
 ;  (-> res
@@ -56,7 +58,14 @@
 ;
 ;
 
-(defn make-source [settings])
+
+(defn make-source [settings]
+  (reify source
+    (fetch [_] (let [result (invoke-lambda-fn "aws-hello"
+                                              (json/generate-string (merge {:url (str (url api-root tag-gallery-path "wallpaper"))}
+                                                                           imgur-http-config)))]
+                 result))
+    (parse [_ data] (:body data))))
 ;;(defn make-source [settings]
 ;;  (reify source
 ;;    (fetch [_] (let [tag-items (fetch-tag-items "wallpaper")

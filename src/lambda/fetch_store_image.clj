@@ -1,16 +1,16 @@
 (ns lambda.fetch-store-image
-  (:require [uswitch.lambada.core :refer [deflambdafn]]
+  (:require [org.httpkit.client :as http]
+            [uswitch.lambada.core :refer [deflambdafn]]
             [clojure.data.json :as json]
-            [clojure.java.io :as io])
-  #_(:gen-class
-      :methods [^:static [handler [String] String]]))
+            [clojure.java.io :as io]))
 
 (defn handle-event
-  [event]
-  (println "Got the following event: " (pr-str event))
-  {:statusCode 200
-   :headers {}
-   :body "ok"})
+  [{:strs [url headers]}]
+  (let [response @(http/get url {:headers headers})]
+    {:statusCode 200
+     :headers    {}
+     :body       {:ok   true
+                  :result response}}))
 
 (deflambdafn lambda.fetch-store-image.handler [in out ctx]
   (let [event (json/read (io/reader in))
