@@ -10,7 +10,7 @@
    ;:minimum-idle   1
    ;:maximum-idle   4
    ;:max-active 32
-   :jdbc-url    "jdbc:postgresql://localhost:5432/"
+   :jdbc-url    (str "jdbc:postgresql:" (config :database-subname))
    :username    (config :database-user)
    :password    (config :database-password)
    :port-number (Integer. (config :database-port))})

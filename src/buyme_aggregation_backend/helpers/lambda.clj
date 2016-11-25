@@ -1,7 +1,7 @@
 (ns buyme-aggregation-backend.helpers.lambda
   (:require [amazonica.aws.lambda :refer [invoke]]
             [cheshire.core :as json])
-  (:import  (java.nio.charset StandardCharsets)))
+  (:import (java.nio.charset StandardCharsets)))
 
 
 (defn invoke-lambda-fn [fn-name payload]

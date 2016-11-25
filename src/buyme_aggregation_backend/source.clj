@@ -25,7 +25,6 @@
                           [:stopped])
 
               :stopped (let [command (<! command-ch)]
-                         (print "stopped")
                          (condp = command
                            :start [:idle]
                            :fetch [:fetching :once]
