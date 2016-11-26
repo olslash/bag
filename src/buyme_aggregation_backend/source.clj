@@ -1,7 +1,8 @@
 (ns buyme-aggregation-backend.source
   (:require [buyme-aggregation-backend.db :as db]
             [buyme-aggregation-backend.sources.index :refer [source-impls]]
-            [buyme-aggregation-backend.types :refer [fetch parse]]
+            [buyme-aggregation-backend.types :refer [fetch]]
+            [buyme-aggregation-backend.util.async :refer [blocking-consumer]]
 
             [clojure.core.async :refer [chan go-loop <! alt! sliding-buffer put! close! thread]]
             [clojure.algo.generic.functor :refer [fmap]]
@@ -31,20 +32,23 @@
                            [:stopped]))
 
               :idle (alt!
-                         command-ch ([command] (condp = command
-                                                 :stop [:shutdown]
-                                                 :fetch [:fetching]
-                                                 [:idle]))
-                         fetch-timer-ch [:fetching])
+                      command-ch ([command] (condp = command
+                                              :stop [:shutdown]
+                                              :fetch [:fetching]
+                                              [:idle]))
+                      fetch-timer-ch [:fetching])
 
               :fetching (do
+                          ;; todo:
+                          ;; pull config from db and inject into (fetch)
+                          ;; s3 store w/ lambda
+                          ;; save meta to DB
                           (info "Fetching: " source)
-                          (let [work-ch (thread (->> source
-                                                     (fetch)
-                                                     (parse source)
-                                                     #_(store)))]
-                            (let [result (<! work-ch)]
-                              (println "done! " (count result) " images processed:" result)))
+                          (let [work-ch (fetch source nil)]
+                            (blocking-consumer 2
+                                               work-ch
+                                               (fn [image]
+                                                   (println "got work image" image))))
                           (if (= data :once) [:stopped]
                                              [:idle])))]
 
@@ -66,17 +70,17 @@
   (keyword (:source_impl_id settings)))
 
 (defstate sources
-          :start (->> (db/get-all-sources)
-                      (map (fn [source-settings]
-                             (let [impl (get source-impls (source-impl-id source-settings))]
-                               (when impl
-                                 (vector (:id source-settings) (init-source (impl source-settings)))))))
+  :start (->> (db/get-all-sources)
+              (map (fn [source-settings]
+                     (let [impl (get source-impls (source-impl-id source-settings))]
+                       (when impl
+                         (vector (:id source-settings) (init-source (impl source-settings)))))))
 
-                      (into {})
-                      (fmap start-source))
-          :stop (do
-                  (stop-all-sources sources)
-                  {}))
+              (into {})
+              (fmap start-source))
+  :stop (do
+          (stop-all-sources sources)
+          {}))
 
 
 

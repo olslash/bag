@@ -1,109 +1,90 @@
 (ns buyme-aggregation-backend.sources.imgur
-  (:require [buyme-aggregation-backend.types :refer [source map->image]]
+  (:require [buyme-aggregation-backend.types :refer [Source make-image]]
             [buyme-aggregation-backend.conf :refer [config]]
-            [buyme-aggregation-backend.util.misc :refer [key-by with-thread-pool]]
+            [buyme-aggregation-backend.util.misc :refer [key-by]]
+            [buyme-aggregation-backend.util.async :refer [with-thread-pool]]
             [buyme-aggregation-backend.helpers.lambda :refer [invoke-lambda-fn]]
-            [clojure.core.async :as a]
+            [clojure.core.async :refer [chan go >! <! pipeline-async to-chan close! timeout onto-chan]]
             [clojure.algo.generic.functor :refer [fmap]]
             [clojure.set :refer [rename-keys]]
             [org.httpkit.client :as http]
             [cheshire.core :as json]
             [cemerick.url :refer [url]]))
 
-
+;; todo: get these from config passed to fetch/etc
 (def api-root "https://api.imgur.com/3")
 (def tag-gallery-path "gallery/t")
 (def album-path "album")
 (def imgur-http-config {:headers
-                        {:Authorization (str "Client-ID " (config :imgur-client-id))
-                         :Accept        "application/json"}})
-;
-;(defn parse-response-body [res]
-;  (-> res
-;      (get :body)
-;      (json/parse-string true)
-;      (get :data)))
-;
-;;(defn fetch-tag-items [tag]
-;;  (let [tag-gallery-url (str (url api-root tag-gallery-path tag))]
-;;    (-> @(http/get tag-gallery-url imgur-http-config)
-;;        (parse-response-body)
-;;        (get :items))))
-;
-;
-;
-;
-;
-;
-;;(defn fetch2-urls [urls]
-;;  (let [work-ch (chan)]
-;;    (with-thread-pool 5 work-ch ())))
-;
-;
-;
-;
-;(defn album-url [id]
-;      (str (url api-root album-path id)))
-;
-;(defn attach-album-meta-to-images
-;  "merge album-level metadata into each image in that album"
-;  [album]
-;  ; todo -- merge-with and combine title/descriptions
-;  (assoc album :images (map #(merge (dissoc album :images) %)
-;                             (:images album))))
-;
-;(defn api-image->image [api-image]
-;  (let [translate {:account_id :uploader-id}]
-;     (map->image (rename-keys api-image translate))))
-;
-;
+                        {"Authorization" (str "Client-ID " (config :imgur-client-id))
+                         "Accept"        "application/json"}})
+(def parallelism 2)
+
+(defn api-image->Image [api-image]
+  (let [translate {:account_id  :attribution_id
+                   :account_url :attribution_name
+                   :id          :image_id}]
+    (-> api-image
+        (rename-keys translate)
+        (make-image))))
 
 
-(defn make-source [settings]
-  (reify source
-    (fetch [_] (let [result (invoke-lambda-fn "aws-hello"
-                                              (json/generate-string (merge {:url (str (url api-root tag-gallery-path "wallpaper"))}
-                                                                           imgur-http-config)))]
-                 result))
-    (parse [_ data] (:body data))))
-;;(defn make-source [settings]
-;;  (reify source
-;;    (fetch [_] (let [tag-items (fetch-tag-items "wallpaper")
-;;                     album-urls (->> tag-items
-;;                                     (map #(when (:is_album %) (album-url (:id %))))
-;;                                     (filter some?))
-;;                     fetch-album-promises (doall (map #(http/get % imgur-http-config) album-urls))]
-;;                 {:tag-items tag-items
-;;                  :albums (->> fetch-album-promises
-;;                               (map #(-> % (deref) (parse-response-body)))
-;;                               (key-by :id))}))
-;;    (parse [_ {:keys [tag-items albums]}]
-;;      (let [fat-album-images (->> albums
-;;                                  (fmap attach-album-meta-to-images)
-;;                                  (fmap :images))]
-;;        (->> tag-items
-;;             (map #(if (:is_album %) (get fat-album-images (:id %)) %))
-;;             (flatten)
-;;             (map api-image->image))))))
-;;
-;
-;(def parallelism 5)
-;
-;(defn add-af [in af]
-;  (let [out (a/chan 16)]
-;    (a/pipeline-async parallelism out af in)
-;    out))
-;
-;;(def source (a/to-chan [(str (url api-root tag-gallery-path "wallpaper"))]))
-;
-;
-;(def to-fetch (a/chan 10))
-;(def fetched (a/chan))
-;(a/go-loop []
-;  (let [url (a/<! to-fetch)]
-;    (a/>! fetched @(http/get url imgur-http-config))
-;    (recur)))
-;
-;(a/go-loop []
-;  (println (a/<! fetched))
-;  (recur))
+(defn album-url [id]
+  (str (url api-root album-path id)))
+
+(defn parse-response-body [res]
+  (-> res
+      (get :body)
+      (json/parse-string true)
+      (get :data)))
+
+(defn fetch-tag-items [tag]
+  (let [tag-gallery-url (str (url api-root tag-gallery-path tag))]
+    (http/get tag-gallery-url imgur-http-config)))
+
+(defn fetch-album [id]
+  (let [url (album-url id)]
+    (http/get url imgur-http-config)))
+
+(defn attach-album-meta-to-images
+  "merge album-level metadata into each image in that album"
+  [album]
+  ; todo -- merge-with and combine title/descriptions
+  (assoc album :images (map #(merge (dissoc album :images) %)
+                            (:images album))))
+
+
+(defn make-source [_]
+  (reify Source
+    (fetch [_ config]
+      (let [result-ch (chan)
+            tag-items-promise (fetch-tag-items "wallpaper")]
+        (go
+          (let [tag-items (-> @tag-items-promise
+                              (parse-response-body)
+                              (get :items))
+                images-albums (group-by :is_album tag-items)
+                tag-albums (get images-albums true)
+                tag-images (get images-albums false)]
+
+            ;; put free images
+            (doseq [image tag-images]
+              (->> image
+                   (api-image->Image)
+                   (>! result-ch)))
+
+            ;; fetch albums and put their images
+            (letfn [(process-album [album-meta out-ch]
+                      (-> @(fetch-album (:id album-meta))
+                          (parse-response-body)
+                          #_(attach-album-meta-to-images)
+                          (get :images)
+                          (#(map api-image->Image %))
+                          (#(onto-chan out-ch %))))]
+
+              (pipeline-async parallelism
+                              result-ch
+                              process-album
+                              (to-chan tag-albums)))))
+
+        result-ch))))

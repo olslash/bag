@@ -16,14 +16,19 @@ CREATE TABLE IF NOT EXISTS source_settings (
 --;;
 
 CREATE TABLE IF NOT EXISTS images (
-  image_id integer PRIMARY KEY,
   source_id integer REFERENCES sources,
-  filename varchar(200),
+  image_id integer PRIMARY KEY,
   s3_url varchar(1000),
   slug varchar(200),
+  title text,
   description text,
-  attribution_url text,
+  attribution_id text,
   attribution_name text,
-  posted_at timestamptz,
+  attribution_url text,
+  width integer,
+  height integer,
+  height integer,
+  type varchar(200), -- like image/png
+  nsfw boolean,
   ingested_at timestamptz default CURRENT_TIMESTAMP
 )
