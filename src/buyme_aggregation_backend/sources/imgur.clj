@@ -34,9 +34,9 @@
 
 (defn parse-response-body [res]
   (-> res
-      (get :body)
+      (:body)
       (json/parse-string true)
-      (get :data)))
+      (:data)))
 
 (defn fetch-tag-items [tag]
   (let [tag-gallery-url (str (url api-root tag-gallery-path tag))]
@@ -62,7 +62,7 @@
         (go
           (let [tag-items (-> @tag-items-promise
                               (parse-response-body)
-                              (get :items))
+                              :items)
                 images-albums (group-by :is_album tag-items)
                 tag-albums (get images-albums true)
                 tag-images (get images-albums false)]
@@ -78,7 +78,7 @@
                       (-> @(fetch-album (:id album-meta))
                           (parse-response-body)
                           #_(attach-album-meta-to-images)
-                          (get :images)
+                          :images
                           (#(map api-image->Image %))
                           (#(onto-chan out-ch %))))]
 

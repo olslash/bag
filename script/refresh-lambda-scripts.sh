@@ -5,7 +5,7 @@ cd "$parent_path"
 
 source "./lambda_management_config.conf"
 
-read -p "Delete and replace all lambda handlers with ${jar_path}? [yN] " -n 1 -r
+read -p $'Delete and replace all lambda handlers with ${jar_path}\n(cleans and generates a new jar)? [yN] ' -n 1 -r
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
@@ -26,6 +26,10 @@ create_lambda_function() {
         --zip-file fileb://$jar_path
 }
 
+echo
+lein clean
+echo "cleaned, generating uberjar..."
+lein with-profile lambda uberjar
 echo
 
 for i in `seq 0 2 $((${#handlers[@]} - 1))`; do

@@ -15,7 +15,7 @@
 
 (defn init-source [source]
   (let [command-ch (chan)
-        fetch-timer-ch (chime-ch (rest (periodic-seq (t/now) (-> 5 t/minutes)))
+        fetch-timer-ch (chime-ch (periodic-seq (t/now) (-> 10 t/minutes))
                                  {:ch (chan (sliding-buffer 1))})]
     (go-loop
       [[state data] [:stopped]]
@@ -41,8 +41,8 @@
               :fetching (do
                           ;; todo:
                           ;; pull config from db and inject into (fetch)
-                          ;; s3 store w/ lambda
-                          ;; save meta to DB
+                          ;; s3 store w/ lambda + meta?
+                          ;; save meta to DB?
                           (info "Fetching: " source)
                           (let [work-ch (fetch source nil)]
                             (blocking-consumer 2

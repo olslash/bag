@@ -1,6 +1,6 @@
 (ns buyme-aggregation-backend.helpers.liberator
   (:require [clojure.java.io :as io]
-            [clojure.data.json :as json]))
+            [cheshire.core :as json]))
 
 
 ;; convert the body to a reader. Useful for testing in the repl
@@ -18,7 +18,7 @@
   (when (#{:put :post} (get-in ctx [:request :request-method]))
     (try
       (if-let [body (body-as-string ctx)]
-        (let [data (json/read-str body)]
+        (let [data (json/parse-string body true)]
           [false {key data}])
         {:message "No body"})
       (catch Exception e

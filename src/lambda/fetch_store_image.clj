@@ -1,19 +1,29 @@
 (ns lambda.fetch-store-image
-  (:require [org.httpkit.client :as http]
-            [uswitch.lambada.core :refer [deflambdafn]]
-            [clojure.data.json :as json]
-            [clojure.java.io :as io]))
+  (:require [buyme-aggregation-backend.helpers.lambda :refer [lambda-handler upload-s3-file]]
+            [org.httpkit.client :as http]
+            [uswitch.lambada.core :refer [deflambdafn]]))
+
 
 (defn handle-event
-  [{:strs [url headers]}]
-  (let [response @(http/get url {:headers headers})]
-    {:statusCode 200
-     :headers    {}
-     :body       {:ok   true
-                  :result response}}))
+  [{:keys [image-url
+           image-fetch-headers
+           bucket-name
+           file-name
+           image-meta]}
+   ctx]
+  (let [image (:body @(http/get image-url {:headers (or image-fetch-headers {})
+                                           :as      :stream}))
+        s3-upload (upload-s3-file bucket-name file-name image (or image-meta {}))
+        out (promise)]
+    ((:add-progress-listener s3-upload) #(when (= :completed (:event %))
+                                           (deliver out {:statusCode 200
+                                                         :headers    {}
+                                                         :body       {:ok     true
+                                                                      :result %}})))
+
+    out))
+
+
 
 (deflambdafn lambda.fetch-store-image.handler [in out ctx]
-  (let [event (json/read (io/reader in))
-        res (handle-event event)]
-    (with-open [w (io/writer out)]
-      (json/write res w))))
+  (lambda-handler in out ctx handle-event))
