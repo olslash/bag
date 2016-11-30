@@ -11,6 +11,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/tools.namespace "0.2.11"]
                  [org.clojure/algo.generic "0.1.2"]
+                 [org.clojure/core.match "0.3.0-alpha4"]
 
                  [environ "1.0.3"]
 

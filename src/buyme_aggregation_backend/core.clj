@@ -51,6 +51,12 @@
 
 
 
+(Thread/setDefaultUncaughtExceptionHandler
+  (reify Thread$UncaughtExceptionHandler
+    (uncaughtException [_ thread throwable]
+      (println "uncaught exception:" (.getMessage throwable))
+      (System/exit 1))))
+
 (defn -main []
   (dosync
     (do-logging-config config)

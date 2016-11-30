@@ -26,26 +26,61 @@
                    :id          :image_id}]
     (-> api-image
         (rename-keys translate)
-        (make-image))))
+        make-image)))
 
 
 (defn album-url [id]
   (str (url api-root album-path id)))
 
 (defn parse-response-body [res]
-  (-> res
-      (:body)
-      (json/parse-string true)
-      (:data)))
+  (update res :body json/parse-string true))
+
+
+
+(def errors {400 :bad-request
+             401 :bad-auth                                  ; cease and error. stop source?
+             403 :forbidden                                 ; cease and error. stop source?
+             404 :not-found                                 ; ignore, log
+             420 :rate-limited                              ; cease, stop source, do not allow restart until after x-ratelimit-userreset
+             500 :server-error})                            ; ignore
+
+;; todo: move to generic place
+(defn fallback-error-for [code]
+  (println "fallback" code)
+  (cond
+    (and (>= code 300)
+         (< code 400)) :redirected
+    (and (>= code 400)
+         (< code 500)) :bad-request
+    (>= code 500) :server-error
+    :else nil))
+
+(defn code->error [code]
+  (let [defined-type (get errors code)]
+    (or defined-type (fallback-error-for code))))
 
 (defn fetch-tag-items [tag]
-  (let [tag-gallery-url (str (url api-root tag-gallery-path tag))]
-    (http/get tag-gallery-url imgur-http-config)))
+  (future
+    (let [tag-gallery-url (str (url api-root tag-gallery-path tag))
+          res @(http/get tag-gallery-url imgur-http-config)]
+      (when-let [error (code->error (:status res))]
+        (throw (ex-info
+                 (str "Failed to fetch imgur tag items for:" tag)
+                 {:type error})))
+      (-> res parse-response-body :body :data))))
+
 
 (defn fetch-album [id]
-  (let [url (album-url id)]
-    (http/get url imgur-http-config)))
+  (future
+    (let [album-url (album-url id)
+          res @(http/get album-url imgur-http-config)]
+      (when-let [error (code->error (:status res))]
+        (throw (ex-info
+                 (str "Failed to fetch imgur album:" id)
+                 {:type error})))
+      (-> res parse-response-body :body :data))))
 
+; fixme -- album images often have no title/description so we need album meta
 (defn attach-album-meta-to-images
   "merge album-level metadata into each image in that album"
   [album]
@@ -57,34 +92,32 @@
 (defn make-source [_]
   (reify Source
     (fetch [_ config]
-      (let [result-ch (chan)
-            tag-items-promise (fetch-tag-items "wallpaper")]
-        (go
-          (let [tag-items (-> @tag-items-promise
-                              (parse-response-body)
-                              :items)
-                images-albums (group-by :is_album tag-items)
-                tag-albums (get images-albums true)
-                tag-images (get images-albums false)]
+      (let [result-ch (chan)]
+        (go (try
+              (let [images-albums (->> @(fetch-tag-items "wallpaper")
+                                       :items
+                                       (group-by #(if (:is_album %) :albums :images)))]
+                ;; put free images
+                (doseq [image (:images images-albums)]
+                  (as-> image i
+                        (api-image->Image i)
+                        (>! result-ch [:ok i])))
 
-            ;; put free images
-            (doseq [image tag-images]
-              (->> image
-                   (api-image->Image)
-                   (>! result-ch)))
+                ;; fetch albums and put their images
+                (letfn [(process-album [album-meta out-ch]
+                          (as-> @(fetch-album (:id album-meta)) $
+                                #_(attach-album-meta-to-images $)
+                                (:images $)
+                                (map api-image->Image $)
+                                (map #(identity [:ok %]) $)
+                                (onto-chan out-ch $)))]
 
-            ;; fetch albums and put their images
-            (letfn [(process-album [album-meta out-ch]
-                      (-> @(fetch-album (:id album-meta))
-                          (parse-response-body)
-                          #_(attach-album-meta-to-images)
-                          :images
-                          (#(map api-image->Image %))
-                          (#(onto-chan out-ch %))))]
+                  (pipeline-async parallelism
+                                  result-ch
+                                  process-album
+                                  (to-chan (:albums images-albums)))))
 
-              (pipeline-async parallelism
-                              result-ch
-                              process-album
-                              (to-chan tag-albums)))))
+              (catch Exception e
+                (>! result-ch [:error e]))))
 
         result-ch))))

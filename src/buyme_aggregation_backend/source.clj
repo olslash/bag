@@ -4,18 +4,31 @@
             [buyme-aggregation-backend.types :refer [fetch]]
             [buyme-aggregation-backend.util.async :refer [blocking-consumer]]
 
-            [clojure.core.async :refer [chan go-loop <! alt! sliding-buffer put! close! thread]]
+            [clojure.core.async :as a :refer [chan go-loop <! alt! sliding-buffer put! close! thread]]
             [clojure.algo.generic.functor :refer [fmap]]
+            [clojure.core.match :refer [match]]
             [chime :refer [chime-ch]]
-            [clj-time.core :as t]
+            [clj-time.core :refer [now plus minus hours minutes]]
+            [clj-time.coerce :refer [to-long]]
             [clj-time.periodic :refer [periodic-seq]]
             [mount.core :refer [defstate]]
             [taoensso.timbre :refer [info]]))
 
+(defn get-error-action [reason]
+  "non-200, "
+  (condp = reason
+    :bad-request [:cease :stop-source]
+    :bad-auth [:cease :stop-source]
+    :forbidden [:cease :stop-source]
+    :not-found [:ignore]
+    :server-error [:ignore]
+    :rate-limited [:case :stop-source [:block-until (-> (now)
+                                                        (plus (-> 3 hours))
+                                                        to-long)]]))
 
 (defn init-source [source]
   (let [command-ch (chan)
-        fetch-timer-ch (chime-ch (periodic-seq (t/now) (-> 10 t/minutes))
+        fetch-timer-ch (chime-ch (periodic-seq (now) (-> 10 minutes))
                                  {:ch (chan (sliding-buffer 1))})]
     (go-loop
       [[state data] [:stopped]]
@@ -43,12 +56,13 @@
                           ;; pull config from db and inject into (fetch)
                           ;; s3 store w/ lambda + meta?
                           ;; save meta to DB?
-                          (info "Fetching: " source)
                           (let [work-ch (fetch source nil)]
-                            (blocking-consumer 2
+                            (blocking-consumer 3
                                                work-ch
-                                               (fn [image]
-                                                   (println "got work image" image))))
+                                               (fn [[status data]]
+                                                 (match [status data]
+                                                        [:ok image] (println "got work image" image)
+                                                        [:error message] (println "ERROR:" message)))))
                           (if (= data :once) [:stopped]
                                              [:idle])))]
 
