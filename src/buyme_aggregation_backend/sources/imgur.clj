@@ -4,9 +4,10 @@
             [buyme-aggregation-backend.util.misc :refer [key-by]]
             [buyme-aggregation-backend.util.async :refer [with-thread-pool]]
             [buyme-aggregation-backend.helpers.lambda :refer [invoke-lambda-fn]]
-            [clojure.core.async :refer [chan go >! <! pipeline-async to-chan close! timeout onto-chan]]
+            [clojure.core.async :refer [go-loop chan go >! <! pipeline-async to-chan close! timeout onto-chan]]
             [clojure.algo.generic.functor :refer [fmap]]
             [clojure.set :refer [rename-keys]]
+
             [org.httpkit.client :as http]
             [cheshire.core :as json]
             [cemerick.url :refer [url]]))
@@ -38,11 +39,11 @@
 
 
 (def errors {400 :bad-request
-             401 :bad-auth                                  ; cease and error. stop source?
-             403 :forbidden                                 ; cease and error. stop source?
-             404 :not-found                                 ; ignore, log
-             420 :rate-limited                              ; cease, stop source, do not allow restart until after x-ratelimit-userreset
-             500 :server-error})                            ; ignore
+             401 :bad-auth
+             403 :forbidden
+             404 :not-found
+             420 :rate-limited
+             500 :server-error})
 
 ;; todo: move to generic place
 (defn fallback-error-for [code]
@@ -89,35 +90,41 @@
                             (:images album))))
 
 
-(defn make-source [_]
-  (reify Source
-    (fetch [_ config]
-      (let [result-ch (chan)]
-        (go (try
-              (let [images-albums (->> @(fetch-tag-items "wallpaper")
-                                       :items
-                                       (group-by #(if (:is_album %) :albums :images)))]
-                ;; put free images
-                (doseq [image (:images images-albums)]
-                  (as-> image i
-                        (api-image->Image i)
-                        (>! result-ch [:ok i])))
 
-                ;; fetch albums and put their images
-                (letfn [(process-album [album-meta out-ch]
+
+(defrecord imgur-source [source-settings]
+  Source
+  (fetch [_ fetch-settings]
+    (let [result-ch (chan)]
+      (go (try
+            (let [images-albums (->> @(fetch-tag-items "wallpaper")
+                                     :items
+                                     (group-by #(if (:is_album %) :albums :images)))]
+              ;; put free images
+              (doseq [image (:images images-albums)]
+                (as-> image i
+                      (api-image->Image i)
+                      (>! result-ch [:ok i])))
+
+              ;; fetch albums and put their images
+              (letfn [(process-album [album-meta out-ch]
+                        (try
                           (as-> @(fetch-album (:id album-meta)) $
                                 #_(attach-album-meta-to-images $)
                                 (:images $)
                                 (map api-image->Image $)
                                 (map #(identity [:ok %]) $)
-                                (onto-chan out-ch $)))]
+                                (onto-chan out-ch $)))
+                        (catch Exception e
+                          (>! result-ch [:error e])
+                          (close! out-ch)))]
 
-                  (pipeline-async parallelism
-                                  result-ch
-                                  process-album
-                                  (to-chan (:albums images-albums)))))
+                (pipeline-async parallelism
+                                result-ch
+                                process-album
+                                (to-chan (:albums images-albums)))))
 
-              (catch Exception e
-                (>! result-ch [:error e]))))
+            (catch Exception e
+              (>! result-ch [:error e]))))
 
-        result-ch))))
+      result-ch)))

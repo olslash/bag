@@ -4,7 +4,7 @@
             [buyme-aggregation-backend.types :refer [fetch]]
             [buyme-aggregation-backend.util.async :refer [blocking-consumer]]
 
-            [clojure.core.async :as a :refer [chan go-loop <! alt! sliding-buffer put! close! thread]]
+            [clojure.core.async :refer [chan go-loop <! alt! sliding-buffer put! close! thread]]
             [clojure.algo.generic.functor :refer [fmap]]
             [clojure.core.match :refer [match]]
             [chime :refer [chime-ch]]
@@ -17,7 +17,7 @@
 (defn get-error-action [reason]
   "non-200, "
   (condp = reason
-    :bad-request [:cease :stop-source]
+    :bad-request [:ignore]
     :bad-auth [:cease :stop-source]
     :forbidden [:cease :stop-source]
     :not-found [:ignore]
