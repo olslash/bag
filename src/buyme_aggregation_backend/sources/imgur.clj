@@ -114,10 +114,10 @@
                                 (:images $)
                                 (map api-image->Image $)
                                 (map #(identity [:ok %]) $)
-                                (onto-chan out-ch $)))
-                        (catch Exception e
-                          (>! result-ch [:error e])
-                          (close! out-ch)))]
+                                (onto-chan out-ch $))
+                          (catch Exception e
+                            (>! result-ch [:error e])
+                            (close! out-ch))))]
 
                 (pipeline-async parallelism
                                 result-ch
