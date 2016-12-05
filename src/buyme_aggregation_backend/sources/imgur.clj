@@ -4,7 +4,7 @@
             [buyme-aggregation-backend.util.misc :refer [key-by]]
             [buyme-aggregation-backend.util.async :refer [with-thread-pool]]
             [buyme-aggregation-backend.helpers.lambda :refer [invoke-lambda-fn]]
-            [clojure.core.async :refer [go-loop chan go >! <! pipeline-async to-chan close! timeout onto-chan]]
+            [clojure.core.async :refer [alt! go-loop chan thread >! <! pipeline-async to-chan close! timeout onto-chan]]
             [clojure.algo.generic.functor :refer [fmap]]
             [clojure.set :refer [rename-keys]]
 
@@ -67,7 +67,7 @@
       (when-let [error (code->error (:status res))]
         (throw (ex-info
                  (str "Failed to fetch imgur tag items for:" tag)
-                 {:type error})))
+                 {:reason error})))
       (-> res parse-response-body :body :data))))
 
 
@@ -78,7 +78,7 @@
       (when-let [error (code->error (:status res))]
         (throw (ex-info
                  (str "Failed to fetch imgur album:" id)
-                 {:type error})))
+                 {:reason error})))
       (-> res parse-response-body :body :data))))
 
 ; fixme -- album images often have no title/description so we need album meta
@@ -95,36 +95,42 @@
 (defrecord imgur-source [source-settings]
   Source
   (fetch [_ fetch-settings]
-    (let [result-ch (chan)]
-      (go (try
-            (let [images-albums (->> @(fetch-tag-items "wallpaper")
-                                     :items
-                                     (group-by #(if (:is_album %) :albums :images)))]
-              ;; put free images
-              (doseq [image (:images images-albums)]
-                (as-> image i
-                      (api-image->Image i)
-                      (>! result-ch [:ok i])))
+    (let [result-ch (chan 100)
+          command-ch (chan)]
+      (thread (try
+                (let [images-albums (->> @(fetch-tag-items "wallpaper")
+                                         :items
+                                         (group-by #(if (:is_album %) :albums :images)))]
+                  ;; put free images
+                  (doseq [image (:images images-albums)]
+                    (as-> image i
+                          (api-image->Image i)
+                          (>! result-ch [:ok i])))
 
-              ;; fetch albums and put their images
-              (letfn [(process-album [album-meta out-ch]
-                        (try
-                          (as-> @(fetch-album (:id album-meta)) $
-                                #_(attach-album-meta-to-images $)
-                                (:images $)
-                                (map api-image->Image $)
-                                (map #(identity [:ok %]) $)
-                                (onto-chan out-ch $))
-                          (catch Exception e
-                            (>! result-ch [:error e])
-                            (close! out-ch))))]
+                  ;; fetch albums and put their images
+                  (letfn [(process-album [album-meta out-ch]
+                            (try
+                              (as-> @(fetch-album (:id album-meta)) $
+                                    #_(attach-album-meta-to-images $)
+                                    (:images $)
+                                    (map api-image->Image $)
+                                    (map #(identity [:ok %]) $)
+                                    (onto-chan out-ch $))
+                              (catch Exception e
+                                (>! result-ch [:error e])
+                                (close! out-ch))))]
 
-                (pipeline-async parallelism
-                                result-ch
-                                process-album
-                                (to-chan (:albums images-albums)))))
+                    (alt!
+                      (pipeline-async parallelism
+                                      result-ch
+                                      process-album
+                                      (to-chan (:albums images-albums)))
 
-            (catch Exception e
-              (>! result-ch [:error e]))))
+                      command-ch ([command] (if (= :stop command)
+                                              ;; stop pipeline
+                                              (close! result-ch))))))
 
-      result-ch)))
+                (catch Exception e
+                  (>! result-ch [:error e]))))
+
+      [result-ch command-ch])))

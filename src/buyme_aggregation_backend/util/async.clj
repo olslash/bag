@@ -9,8 +9,8 @@
         (let [w (<!! work-ch)]
           (try
             (handle w)
-            (catch Throwable t
-              (println "fixme" t))))
+            (catch Throwable t)))
+              ;(println "fixme" t))))
         (recur)))))
 
 

@@ -4,7 +4,7 @@
             [buyme-aggregation-backend.types :refer [fetch]]
             [buyme-aggregation-backend.util.async :refer [blocking-consumer]]
 
-            [clojure.core.async :refer [chan go-loop <! alt! sliding-buffer put! close! thread]]
+            [clojure.core.async :refer [>! chan go-loop <! alt! sliding-buffer put! close! thread]]
             [clojure.algo.generic.functor :refer [fmap]]
             [clojure.core.match :refer [match]]
             [chime :refer [chime-ch]]
@@ -14,17 +14,17 @@
             [mount.core :refer [defstate]]
             [taoensso.timbre :refer [info]]))
 
-(defn get-error-action [reason]
-  "non-200, "
-  (condp = reason
-    :bad-request [:ignore]
-    :bad-auth [:cease :stop-source]
-    :forbidden [:cease :stop-source]
-    :not-found [:ignore]
-    :server-error [:ignore]
-    :rate-limited [:case :stop-source [:block-until (-> (now)
-                                                        (plus (-> 3 hours))
-                                                        to-long)]]))
+(defn get-error-action [error]
+  (let [reason (:reason (ex-data error))]
+    (condp = reason
+      :bad-request [:ignore]
+      :not-found [:ignore]
+      :server-error [:ignore]
+      :bad-auth [:stop-source]
+      :forbidden [:stop-source]
+      :rate-limited [:block-until (-> (now)
+                                      (plus (-> 3 hours))
+                                      to-long)])))
 
 (defn init-source [source]
   (let [command-ch (chan)
@@ -50,22 +50,38 @@
                                               :fetch [:fetching]
                                               [:idle]))
                       fetch-timer-ch [:fetching])
+              ;; todo:
+              ;; pull config from db and inject into (fetch)
+              ;; s3 store w/ lambda + meta?
+              ;; save meta to DB?
+              :fetching (try
+                          (let [[work-ch source-command-ch] (fetch source nil)]
+                            (<! (blocking-consumer 3
+                                                   work-ch
+                                                   (fn [[status data]]
+                                                     (match [status data]
+                                                            [:ok image] (println "got work image" image)
+                                                            [:error e] (let [action (get-error-action e)]
+                                                                         (when-not (= action :ignore)
+                                                                           (throw e)))))))
 
-              :fetching (do
-                          ;; todo:
-                          ;; pull config from db and inject into (fetch)
-                          ;; s3 store w/ lambda + meta?
-                          ;; save meta to DB?
-                          (let [work-ch (fetch source nil)]
-                            (blocking-consumer 3
-                                               work-ch
-                                               (fn [[status data]]
-                                                 (match [status data]
-                                                        [:ok image] (println "got work image" image)
-                                                        [:error message] (println "ERROR:" message)))))
-                          (if (= data :once) [:stopped]
-                                             [:idle])))]
+                            (if (= data :once) [:stopped]
+                                               [:idle])
 
+                            (catch Exception e
+                              (let [action (get-error-action e)
+                                    command (first action)
+                                    command-data (second action)]
+                                (when (some #{command} [:cease :stop-source :block-until])
+                                  ;; stop api fetching
+                                  (>! source-command-ch :stop))
+
+                                ;; next state
+                                (condp = command
+                                  :cease [:idle]
+                                  :stop-source [:stopped]
+                                  :block-until [:stopped command-data]
+                                  [:stopped]))))))]
         (recur new-state)))
     command-ch))
 
@@ -95,6 +111,3 @@
   :stop (do
           (stop-all-sources sources)
           {}))
-
-
-
