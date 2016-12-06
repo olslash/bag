@@ -54,8 +54,8 @@
               ;; pull config from db and inject into (fetch)
               ;; s3 store w/ lambda + meta?
               ;; save meta to DB?
-              :fetching (try
-                          (let [[work-ch source-command-ch] (fetch source nil)]
+              :fetching (let [[work-ch source-command-ch] (fetch source nil)]
+                          (try
                             (<! (blocking-consumer 3
                                                    work-ch
                                                    (fn [[status data]]

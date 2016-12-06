@@ -125,6 +125,7 @@
                                       result-ch
                                       process-album
                                       (to-chan (:albums images-albums)))
+                      ([_])                                 ;; noop
 
                       command-ch ([command] (if (= :stop command)
                                               ;; stop pipeline
