@@ -1,0 +1,1 @@
+{:environment "development", :database-name "postgres", :database-password "pw", :database-port "5432", :database-user "postgres", :database-subname "//localhost:5432/postgres", :log-level "info"}
