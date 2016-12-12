@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS images (
   attribution_url text,
   width integer,
   height integer,
-  height integer,
   type varchar(200), -- like image/png
   nsfw boolean,
   ingested_at timestamptz default CURRENT_TIMESTAMP
