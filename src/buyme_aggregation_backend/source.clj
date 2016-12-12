@@ -4,7 +4,7 @@
             [buyme-aggregation-backend.types :refer [fetch]]
             [buyme-aggregation-backend.util.async :refer [blocking-consumer]]
 
-            [clojure.core.async :refer [>! chan go-loop <! alt! sliding-buffer put! close! thread]]
+            [clojure.core.async :refer [thread close! pipeline-async <!! >!! chan sliding-buffer]]
             [clojure.algo.generic.functor :refer [fmap]]
             [clojure.core.match :refer [match]]
             [chime :refer [chime-ch]]
@@ -24,90 +24,128 @@
       :forbidden [:stop-source]
       :rate-limited [:block-until (-> (now)
                                       (plus (-> 3 hours))
-                                      to-long)])))
+                                      to-long)]
+      [:ignore])))
+
+;; based on ideas from https://github.com/Day8/re-frame/blob/master/src/re_frame/router.cljc
+(defprotocol ISourceMachine
+  ;(run [this])                                              ;; start looping
+  (-next [this action data?])                               ;; next state given an action and maybe data
+  (-enter [this state data?])                               ;; fn to run on entering state
+  (send! [this action])                                     ;; send in event from outside
+  ;(shutdown [this])                                         ;; interrupt/immediate shutdown source
+  (get-state [this]))                                       ;; get info about current state
+
+(deftype SourceMachine [^:volatile-mutable fsm-state
+                        source]
+  ISourceMachine
+  (-next [this action data]
+    (case [fsm-state action]
+      ;; shutdown cleans up before moving to stopped state
+      [:shutdown :stop] [:stopped]
+
+      ;; stopped sources do not fetch based on timer events
+      ; fixme
+      [:stopped :start] [:idle]
+      [:stopped :fetch] [:fetching]
+
+      ;; idling sources are responsive to timer events
+      [:idle :stop] [:shutdown]
+      [:idle :fetch] [:fetching]
+
+      [:fetching :done] [:idle]
+      [:fetching :cease] [:idle]
+      [:fetching :stop] [:shutdown]
+      [:fetching :block-until] [:shutdown data]
+      nil))
+
+  (-enter [this state data]
+    (case state
+      :shutdown (do
+                  (println "shutting down with" data)
+                  (send! this :stop))
+
+      :stopped (println "entered stopped state")
+
+      :idle (println "entered idle state")
+
+      ; todo: cleanup right-drift
+      :fetching (let [[work-ch source-command-ch] (fetch source nil)
+                      consumer-result-ch (chan)]
+                  (pipeline-async 3
+                                  consumer-result-ch
+                                  (fn [[status data] ch]
+                                    (thread
+                                      (case status
+                                        :ok (do
+                                              (println "got work image" data)
+                                              (>!! ch [:ok (:image_id data)]))
+
+                                        :error (>!! ch [:error data]))
+                                      (close! ch)))
+                                  work-ch)
+
+                  (loop [[status data] (<!! consumer-result-ch)]
+                    (case status
+                      ;; work unit completed
+                      :ok (recur (<!! consumer-result-ch))
+
+                      ;; processing done
+                      nil (if (= data :once) (send! this :stop)
+                                             (send! this :done))
+
+                      ;; handle pipeline errors
+                      :error (let [error-action (get-error-action data)
+                                   command (first error-action)
+                                   data (second error-action)]
+                               ;; stop api fetching if needed
+                               (when (some #{command} [:cease :stop-source :block-until])
+                                 (>!! source-command-ch :stop))
+
+                               (send! this (condp = command
+                                             :cease :cease
+                                             :stop-source :stop
+                                             :block-until [:stop data]
+                                             :stop))))))
+
+      nil))
+
+  (send! [this action]
+    (let [[action data] (if (vector? action)
+                          [(first action) (second action)]
+                          [action nil])]
+      ;; todo: figure out data-- could be passed into send from outside, also
+      ;; from -next
+      (when-let [[next-fsm-state next-fsm-state-data] (-next this action data)]
+        (set! fsm-state next-fsm-state)
+        (-enter this fsm-state data)))
+    this)
+
+  (get-state [this] fsm-state))
+
 
 (defn init-source [source]
-  (let [command-ch (chan)
-        fetch-timer-ch (chime-ch (periodic-seq (now) (-> 10 minutes))
-                                 {:ch (chan (sliding-buffer 1))})]
-    (go-loop
-      [[state data] [:stopped]]
-      (let [new-state
-            (case state
-              :shutdown (do
-                          (print "shutting down...")
-                          [:stopped])
+  (->SourceMachine :stopped source))
 
-              :stopped (let [command (<! command-ch)]
-                         (condp = command
-                           :start [:idle]
-                           :fetch [:fetching :once]
-                           [:stopped]))
+(defn start-source! [source]
+  (send! source :star)
+  source)
 
-              :idle (alt!
-                      command-ch ([command] (condp = command
-                                              :stop [:shutdown]
-                                              :fetch [:fetching]
-                                              [:idle]))
-                      fetch-timer-ch [:fetching])
-              ;; todo:
-              ;; pull config from db and inject into (fetch)
-              ;; s3 store w/ lambda + meta?
-              ;; save meta to DB?
-              :fetching (let [[work-ch source-command-ch] (fetch source nil)]
-                          (try
-                            (<! (blocking-consumer 3
-                                                   work-ch
-                                                   (fn [[status data]]
-                                                     (match [status data]
-                                                            [:ok image] (println "got work image" image)
-                                                            [:error e] (let [action (get-error-action e)]
-                                                                         (when-not (= action :ignore)
-                                                                           (throw e)))))))
-
-                            (if (= data :once) [:stopped]
-                                               [:idle])
-
-                            (catch Exception e
-                              (let [action (get-error-action e)
-                                    command (first action)
-                                    command-data (second action)]
-                                (when (some #{command} [:cease :stop-source :block-until])
-                                  ;; stop api fetching
-                                  (>! source-command-ch :stop))
-
-                                ;; next state
-                                (condp = command
-                                  :cease [:idle]
-                                  :stop-source [:stopped]
-                                  :block-until [:stopped command-data]
-                                  [:stopped]))))))]
-        (recur new-state)))
-    command-ch))
-
-(defn start-source [ch]
-  (put! ch :start)
-  ch)
-
-(defn stop-source [ch]
-  (put! ch :stop (constantly #(close! ch))))
+(defn stop-source [source]
+  (send! source :stop))
 
 (defn stop-all-sources [sources]
+  (println sources)
   (fmap stop-source sources))
-
-
-(defn source-impl-id [settings]
-  (keyword (:source_impl_id settings)))
 
 (defstate sources
   :start (->> (db/get-all-sources)
               (map (fn [source-settings]
-                     (let [impl (get source-impls (source-impl-id source-settings))]
-                       (when impl
-                         (vector (:id source-settings) (init-source (impl source-settings)))))))
-
+                     (when-let [impl (get source-impls (keyword (:source_impl_id source-settings)))]
+                       (vector (:id source-settings)
+                               (init-source (impl source-settings))))))
               (into {})
-              (fmap start-source))
+              (fmap start-source!))
   :stop (do
           (stop-all-sources sources)
           {}))
