@@ -10,11 +10,11 @@
 
 (defn with-thread-pool [n work-ch handle]
   (doseq [_ n]
-     (thread
-       (loop []
-         (let [w (<!! work-ch)]
-           (try
-             (handle w)
-             (catch Throwable t
-               (println "fixme" t))))
-         (recur)))))
+    (thread
+      (loop []
+        (let [w (<!! work-ch)]
+          (try
+            (handle w)
+            (catch Throwable t
+              (println "fixme" t))))
+        (recur)))))

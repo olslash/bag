@@ -7,15 +7,15 @@
 
 (defn lambda-handler [in out ctx handler-fn]
   (let [event (json/parse-stream (io/reader in) true)
-        res @(handler-fn event ctx)]
+        res   @(handler-fn event ctx)]
     (with-open [w (io/writer out)]
       (json/generate-stream res w))))
 
 
 (defn invoke-lambda-fn [fn-name payload]
-  (let [res (invoke {:endpoint "us-west-1"}
-                    :function-name fn-name
-                    :payload (json/generate-string payload))
+  (let [res  (invoke {:endpoint "us-west-1"}
+                     :function-name fn-name
+                     :payload (json/generate-string payload))
         json (-> (String. (.array (:payload res)) StandardCharsets/UTF_8)
                  (json/parse-string true)
                  :body

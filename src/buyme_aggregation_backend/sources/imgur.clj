@@ -62,7 +62,7 @@
 (defn fetch-tag-items [tag]
   (future
     (let [tag-gallery-url (str (url api-root tag-gallery-path tag))
-          res @(http/get tag-gallery-url imgur-http-config)]
+          res             @(http/get tag-gallery-url imgur-http-config)]
       (when-let [error (code->error (:status res))]
         (throw (ex-info
                  (str "Failed to fetch imgur tag items for: " tag)
@@ -73,7 +73,7 @@
 (defn fetch-album [id]
   (future
     (let [album-url (album-url id)
-          res @(http/get album-url imgur-http-config)]
+          res       @(http/get album-url imgur-http-config)]
       (when-let [error (code->error (:status res))]
         (throw (ex-info
                  (str "Failed to fetch imgur album: " id)
@@ -98,7 +98,7 @@
 (defrecord imgur-source [source-settings]
   Source
   (fetch [_ fetch-settings]
-    (let [result-ch (chan 1024)
+    (let [result-ch  (chan 1024)
           command-ch (chan)]
       (thread (try
                 (let [images-albums (->> @(fetch-tag-items "wallpaper")

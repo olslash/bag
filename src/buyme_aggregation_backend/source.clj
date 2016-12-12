@@ -2,11 +2,9 @@
   (:require [buyme-aggregation-backend.db :as db]
             [buyme-aggregation-backend.sources.index :refer [source-impls]]
             [buyme-aggregation-backend.types :refer [fetch]]
-            [buyme-aggregation-backend.util.async :refer [blocking-consumer]]
 
             [clojure.core.async :refer [thread close! pipeline-async <!! >!! chan sliding-buffer]]
             [clojure.algo.generic.functor :refer [fmap]]
-            [clojure.core.match :refer [match]]
             [chime :refer [chime-ch]]
             [clj-time.core :refer [now plus minus hours minutes]]
             [clj-time.coerce :refer [to-long]]
@@ -59,17 +57,16 @@
       [:fetching :block-until] [:shutdown data]
       nil))
 
-  (-enter [this state data]
+  (-enter [this state state-data]
     (case state
       :shutdown (do
-                  (println "shutting down with" data)
+                  (println "shutting down with" state-data)
                   (send! this :stop))
 
       :stopped (println "entered stopped state")
 
       :idle (println "entered idle state")
 
-      ; todo: cleanup right-drift
       :fetching (let [[work-ch source-command-ch] (fetch source nil)
                       consumer-result-ch (chan)]
                   (pipeline-async 3
@@ -78,6 +75,7 @@
                                     (thread
                                       (case status
                                         :ok (do
+                                              ;; do stuff
                                               (println "got work image" data)
                                               (>!! ch [:ok (:image_id data)]))
 
@@ -88,25 +86,28 @@
                   (loop [[status data] (<!! consumer-result-ch)]
                     (case status
                       ;; work unit completed
-                      :ok (recur (<!! consumer-result-ch))
+                      :ok
+                      (recur (<!! consumer-result-ch))
 
                       ;; processing done
-                      nil (if (= data :once) (send! this :stop)
-                                             (send! this :done))
+                      nil
+                      (if (= state-data :once) (send! this :stop)
+                                               (send! this :done))
 
                       ;; handle pipeline errors
-                      :error (let [error-action (get-error-action data)
-                                   command (first error-action)
-                                   data (second error-action)]
-                               ;; stop api fetching if needed
-                               (when (some #{command} [:cease :stop-source :block-until])
-                                 (>!! source-command-ch :stop))
+                      :error
+                      (let [error-action (get-error-action data)
+                            command      (first error-action)
+                            data         (second error-action)
+                            ;; stop api fetching if needed
+                            (when (some #{command} [:cease :stop-source :block-until])
+                              (>!! source-command-ch :stop))
 
-                               (send! this (condp = command
-                                             :cease :cease
-                                             :stop-source :stop
-                                             :block-until [:stop data]
-                                             :stop))))))
+                            (send! this (condp = command
+                                          :cease :cease
+                                          :stop-source :stop
+                                          :block-until [:stop data]
+                                          :stop))]))))
 
       nil))
 
@@ -139,13 +140,13 @@
   (fmap stop-source sources))
 
 (defstate sources
-  :start (->> (db/get-all-sources)
-              (map (fn [source-settings]
-                     (when-let [impl (get source-impls (keyword (:source_impl_id source-settings)))]
-                       (vector (:id source-settings)
-                               (init-source (impl source-settings))))))
-              (into {})
-              (fmap start-source!))
-  :stop (do
-          (stop-all-sources sources)
-          {}))
+          :start (->> (db/get-all-sources)
+                      (map (fn [source-settings]
+                             (when-let [impl (get source-impls (keyword (:source_impl_id source-settings)))]
+                               (vector (:id source-settings)
+                                       (init-source (impl source-settings))))))
+                      (into {})
+                      (fmap start-source!))
+          :stop (do
+                  (stop-all-sources sources)
+                  {}))

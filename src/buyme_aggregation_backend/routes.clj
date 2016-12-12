@@ -14,14 +14,14 @@
 
 
 (def handler
-  (make-handler ["/" {"sources/" {"" sources-controller/sources-collection-handler
+  (make-handler ["/" {"sources/" {""      sources-controller/sources-collection-handler
                                   "start" sources-controller/source-action-handler
-                                  "stop" sources-controller/source-action-handler
+                                  "stop"  sources-controller/source-action-handler
                                   "fetch" sources-controller/source-action-handler
-                                  [:id] sources-controller/source-handler}
+                                  [:id]   sources-controller/source-handler}
 
-                      "images/" {"" images-controller/images-collection-handler
-                                 [:id] images-controller/image-handler}}]))
+                      "images/"  {""    images-controller/images-collection-handler
+                                  [:id] images-controller/image-handler}}]))
 (defn start-server [config]
   (-> handler
       wrap-params

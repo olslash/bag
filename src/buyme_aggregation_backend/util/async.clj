@@ -10,7 +10,7 @@
           (try
             (handle w)
             (catch Throwable t)))
-              ;(println "fixme" t))))
+        ;(println "fixme" t))))
         (recur)))))
 
 

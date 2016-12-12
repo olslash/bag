@@ -9,8 +9,8 @@
   (timbre/set-level! (keyword (config :log-level)))
   (timbre/merge-config!
     {:appenders
-     {:rotor (rotor/rotor-appender {:path "./buyme_aggregation_backend.log"
-                                    :min-level  :debug})}}))
+     {:rotor (rotor/rotor-appender {:path      "./buyme_aggregation_backend.log"
+                                    :min-level :debug})}}))
 
 
 (defn log-http-get [f & args]
