@@ -98,16 +98,16 @@
                       :error
                       (let [error-action (get-error-action data)
                             command      (first error-action)
-                            data         (second error-action)
-                            ;; stop api fetching if needed
-                            (when (some #{command} [:cease :stop-source :block-until])
-                              (>!! source-command-ch :stop))
+                            data         (second error-action)]
+                        ;; stop api fetching if needed
+                        (when (some #{command} [:cease :stop-source :block-until])
+                          (>!! source-command-ch :stop))
 
-                            (send! this (condp = command
-                                          :cease :cease
-                                          :stop-source :stop
-                                          :block-until [:stop data]
-                                          :stop))]))))
+                        (send! this (condp = command
+                                      :cease :cease
+                                      :stop-source :stop
+                                      :block-until [:stop data]
+                                      :stop))))))
 
       nil))
 
