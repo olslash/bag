@@ -11,15 +11,17 @@
            file-name
            image-meta]}
    ctx]
-  (let [image (:body @(http/get image-url {:headers (or image-fetch-headers {})
-                                           :as      :stream}))
-        s3-upload (upload-s3-file bucket-name file-name image (or image-meta {}))
-        out (promise)]
-    ((:add-progress-listener s3-upload) #(when (= :completed (:event %))
-                                           (deliver out {:statusCode 200
-                                                         :headers    {}
-                                                         :body       {:ok     true
-                                                                      :result %}})))
+  (let [image           (:body @(http/get image-url {:headers (or image-fetch-headers {})
+                                                     :as      :stream}))
+        s3-upload       (upload-s3-file bucket-name file-name image (or image-meta {}))
+        out             (promise)
+        add-listener-fn (:add-progress-listener s3-upload)]
+    (add-listener-fn
+      #(when (= :completed (:event %)
+                (deliver out {:statusCode 200
+                              :headers    {}
+                              :body       {:ok     true
+                                           :result ((:upload-result s3-upload))}}))))
 
     out))
 

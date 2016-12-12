@@ -18,21 +18,23 @@
                      :payload (json/generate-string payload))
         json (-> (String. (.array (:payload res)) StandardCharsets/UTF_8)
                  (json/parse-string true)
+             ;; can be :errorMessage
                  :body
-                 :result
-                 (json/parse-string true)
-                 (update :body #(json/parse-string % true)))]
+                 :result)]
+    ;(json/parse-string true)
+    ;(update :body #(json/parse-string % true)))]
     json))
 
 (defn upload-s3-file
-  ([bucket-name file-name input-stream] (upload-s3-file bucket-name file-name input-stream {}))
   ([bucket-name file-name input-stream user-metadata]
    (let [content-length (.available input-stream)]
-     (upload bucket-name
+     (upload {:endpoint "us-west-1"}
+             bucket-name
              file-name
              input-stream
              {:content-length content-length
-              :user-metadata  user-metadata}))))
+              :user-metadata  user-metadata})))
+  ([bucket-name file-name input-stream] (upload-s3-file bucket-name file-name input-stream {})))
 
 
 

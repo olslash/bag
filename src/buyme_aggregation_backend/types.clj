@@ -34,5 +34,4 @@
                   nsfw])
 
 (defn make-image [image-map]
-  (-> image-map
-      (select-keys (map keyword (Image/getBasis)))))
+  (select-keys image-map (map keyword (Image/getBasis))))
