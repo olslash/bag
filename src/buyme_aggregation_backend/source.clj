@@ -2,6 +2,7 @@
   (:require [buyme-aggregation-backend.db :as db]
             [buyme-aggregation-backend.sources.index :refer [source-impls]]
             [buyme-aggregation-backend.types :refer [fetch]]
+            [buyme-aggregation-backend.helpers.lambda :refer [invoke-lambda-fn]]
 
             [clojure.core.async :refer [thread close! pipeline-async <!! >!! chan sliding-buffer]]
             [clojure.algo.generic.functor :refer [fmap]]
@@ -69,14 +70,20 @@
 
       :fetching (let [[work-ch source-command-ch] (fetch source nil)
                       consumer-result-ch (chan)]
-                  (pipeline-async 3
+                  (pipeline-async 75
                                   consumer-result-ch
                                   (fn [[status data] ch]
                                     (thread
                                       (case status
-                                        :ok (do
-                                              ;; do stuff
-                                              (println "got work image" data)
+                                        :ok (let [result (invoke-lambda-fn
+                                                           "fetch-store-image"
+                                                           {:image-url   (str "https://i.imgur.com/" (:image_id data) ".png")
+                                                            :bucket-name "buyme-aggregation-backend"
+                                                            :file-name   (str "test/" (or (:title data) (:image_id data)) ".png")
+                                                            :image-meta  (into {} data)})]
+
+                                              (println (:image_id data))
+                                              (println "uploaded work image" result)
                                               (>!! ch [:ok (:image_id data)]))
 
                                         :error (>!! ch [:error data]))

@@ -1,11 +1,8 @@
 (ns buyme-aggregation-backend.sources.imgur
   (:require [buyme-aggregation-backend.types :refer [Source make-image]]
             [buyme-aggregation-backend.conf :refer [config]]
-            [buyme-aggregation-backend.util.misc :refer [key-by]]
-            [buyme-aggregation-backend.util.async :refer [with-thread-pool]]
             [buyme-aggregation-backend.helpers.lambda :refer [invoke-lambda-fn]]
             [clojure.core.async :refer [poll! >!! alt!! chan thread pipeline-async to-chan close! onto-chan]]
-            [clojure.algo.generic.functor :refer [fmap]]
             [clojure.set :refer [rename-keys]]
 
             [org.httpkit.client :as http]

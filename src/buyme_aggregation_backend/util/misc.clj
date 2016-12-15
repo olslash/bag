@@ -18,3 +18,8 @@
             (catch Throwable t
               (println "fixme" t))))
         (recur)))))
+
+;; http://stackoverflow.com/questions/20747112/simple-way-to-truncate-a-string-in-clojure)
+(defn trunc
+  [s n]
+  (subs s 0 (min (count s) n)))

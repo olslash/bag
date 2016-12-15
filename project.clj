@@ -48,9 +48,9 @@
                  [uswitch/lambada "0.1.2"]
                  [amazonica "0.3.77" :exclusions [com.amazonaws/aws-java-sdk
                                                   com.amazonaws/amazon-kinesis-client]]
-                 [com.amazonaws/aws-java-sdk-core "1.11.57"]
-                 [com.amazonaws/aws-java-sdk-lambda "1.11.57"]
-                 [com.amazonaws/aws-java-sdk-s3 "1.11.57"]]
+                 [com.amazonaws/aws-java-sdk-core "1.11.63"]
+                 [com.amazonaws/aws-java-sdk-lambda "1.11.63"]
+                 [com.amazonaws/aws-java-sdk-s3 "1.11.63"]]
 
   ;; generate uberjars
   ;; `lein clean; lein with-profile lambda uberjar`
